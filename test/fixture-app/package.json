@@ -1,0 +1,9 @@
+{
+  "name": "fixture-books",
+  "private": true,
+  "version": "1.0.0",
+  "description": "Fiori elements V4 fixture app used by the playwright-ui5 e2e tests",
+  "devDependencies": {
+    "@sap-ux/ui5-middleware-fe-mockserver": "*"
+  }
+}

@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>Launchpad host with iframe apps (simulates SAP Build Work Zone)</title>
+    <!--
+      Minimal stand-in for the SAP Build Work Zone shell as seen from a test: UI5 and
+      sap.ushell.Container (AppLifeCycle) in the top window, and the app opened in an iframe some
+      time after an intent is requested - just like the real launchpad, where the app iframe exists
+      before UI5 has finished loading inside it.
+    -->
+    <style>
+      html, body { margin: 0; height: 100%; }
+      header { height: 40px; background: #354a5f; color: #fff; font: 14px sans-serif; display: flex; align-items: center; padding: 0 12px; }
+      iframe { border: 0; width: 100%; height: calc(100% - 40px); }
+    </style>
+    <script
+      id="sap-ui-bootstrap"
+      src="https://ui5.sap.com/1.154.0/resources/sap-ui-core.js"
+      data-sap-ui-libs="sap.m"
+      data-sap-ui-theme="sap_horizon"
+      data-sap-ui-compat-version="edge"
+      data-sap-ui-async="true"
+    ></script>
+    <script>
+      var currentApp = null;
+      window.sap.ushell = {
+        Container: {
+          getServiceAsync: function (name) {
+            if (name !== "AppLifeCycle") return Promise.reject(new Error("no service " + name));
+            return Promise.resolve({ getCurrentApplication: function () { return currentApp; } });
+          },
+        },
+      };
+
+      function openApp() {
+        var frame = document.createElement("iframe");
+        frame.className = "sapUShellApplicationContainer";
+        frame.setAttribute("data-sap-ushell-active", "true");
+        frame.src = "../index.html";
+        document.getElementById("content").appendChild(frame);
+        currentApp = { applicationType: "URL", homePage: false };
+      }
+
+      function navigate() {
+        var old = document.querySelector("iframe");
+        if (old) old.remove();
+        if (/^#Books-display/.test(location.hash)) {
+          currentApp = null; // starting
+          setTimeout(openApp, 500);
+        } else {
+          currentApp = { applicationType: "UI5", homePage: true, componentInstance: {} };
+        }
+      }
+
+      window.addEventListener("hashchange", navigate);
+      sap.ui.require(["sap/ui/core/Core"], function (Core) {
+        Core.ready().then(navigate);
+      });
+    </script>
+  </head>
+  <body>
+    <header id="shell-header">Launchpad host</header>
+    <div id="content" style="height: 100%"></div>
+  </body>
+</html>

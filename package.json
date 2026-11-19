@@ -1,0 +1,65 @@
+{
+  "name": "@ahangl/playwright-ui5",
+  "version": "0.0.1",
+  "description": "E2E tests for UI5 apps (Playwright + UI5 Testing API)",
+  "keywords": [
+    "playwright",
+    "ui5",
+    "sapui5",
+    "openui5"
+  ],
+  "homepage": "https://github.com/ahangl/playwright-ui5#readme",
+  "bugs": {
+    "url": "https://github.com/ahangl/playwright-ui5/issues"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/ahangl/playwright-ui5.git"
+  },
+  "license": "MIT",
+  "author": "ahangl <44925346+ahangl@users.noreply.github.com>",
+  "type": "commonjs",
+  "main": "./dist/index.js",
+  "module": "./dist/index.mjs",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.mjs",
+      "require": "./dist/index.js"
+    },
+    "./package.json": "./package.json"
+  },
+  "files": [
+    "dist"
+  ],
+  "engines": {
+    "node": ">=18"
+  },
+  "scripts": {
+    "build": "tsup",
+    "typecheck": "tsup --silent && tsc --noEmit -p tsconfig.json && tsc --noEmit -p tsconfig.browser.json",
+    "start:app": "cd test/fixture-app && ui5 serve --port 8080",
+    "test": "npm run build && playwright test --project=local",
+    "test:workzone": "npm run build && playwright test --project=workzone"
+  },
+  "peerDependencies": {
+    "@playwright/test": ">=1.40.0",
+    "@sapui5/types": ">=1.120.0"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.65.1",
+    "@sap-ux/ui5-middleware-fe-mockserver": "^2.4.19",
+    "@sapui5/types": "~1.154.0",
+    "@types/node": "^22.0.0",
+    "@ui5/cli": "^4.1.0",
+    "dotenv": "^16.4.0",
+    "tsup": "^8.5.1",
+    "typescript": "~5.9.3"
+  },
+  "peerDependenciesMeta": {
+    "@sapui5/types": {
+      "optional": true
+    }
+  }
+}

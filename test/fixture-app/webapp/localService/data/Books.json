@@ -1,0 +1,7 @@
+[
+  { "ID": 201, "title": "Wuthering Heights", "author": "Emily Brontë", "genre": "Drama", "stock": 12, "price": 11.11 },
+  { "ID": 207, "title": "Jane Eyre", "author": "Charlotte Brontë", "genre": "Drama", "stock": 11, "price": 12.34 },
+  { "ID": 251, "title": "The Raven", "author": "Edgar Allan Poe", "genre": "Mystery", "stock": 333, "price": 13.13 },
+  { "ID": 252, "title": "Eleonora", "author": "Edgar Allan Poe", "genre": "Romance", "stock": 555, "price": 14.0 },
+  { "ID": 271, "title": "Catweazle", "author": "Richard Carpenter", "genre": "Fantasy", "stock": 22, "price": 150.0 }
+]
