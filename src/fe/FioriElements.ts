@@ -13,6 +13,16 @@ interface RunResult {
   log: Array<{ ok: boolean; message: string }>;
 }
 
+export interface FioriElementsInitOptions {
+  /** Timeout in ms per statement. Default: `ui5Options.feTimeout` (30000). */
+  timeout?: number;
+  /**
+   * Whether a `Given` / `When` statement waits until UI5 is idle after its last action.
+   * Default: `ui5Options.feWaitAfter` (`true`).
+   */
+  waitAfter?: boolean;
+}
+
 const KIND_LABEL: Record<FioriElementsKind, string> = { given: "Given", when: "When", then: "Then" };
 
 function pageType(config: FioriElementsPages[string]): string {
@@ -96,10 +106,16 @@ export class FioriElements {
    * browser until a statement is awaited; page objects are (re-)created lazily in whichever frame
    * the statement runs in (Shell pages run in the launchpad frame, all others in the app frame).
    */
-  init<const P extends FioriElementsPages>(pages: P, options: { timeout?: number } = {}): FioriElementsJourney<P> {
+  init<const P extends FioriElementsPages>(pages: P, options: FioriElementsInitOptions = {}): FioriElementsJourney<P> {
     const types: Record<string, string> = {};
     for (const [name, config] of Object.entries(pages)) types[name] = pageType(config);
-    const journey = new Journey(this.ui5, pages, types, options.timeout ?? this.ui5.options.feTimeout);
+    const journey = new Journey(
+      this.ui5,
+      pages,
+      types,
+      options.timeout ?? this.ui5.options.feTimeout,
+      options.waitAfter ?? this.ui5.options.feWaitAfter
+    );
     return {
       Given: journey.root("given"),
       When: journey.root("when"),
@@ -113,7 +129,8 @@ class Journey {
     private readonly ui5: UI5,
     private readonly pages: FioriElementsPages,
     private readonly types: Record<string, string>,
-    private readonly timeout: number
+    private readonly timeout: number,
+    private readonly waitAfter: boolean
   ) {}
 
   root(kind: FioriElementsKind): object {
@@ -190,6 +207,11 @@ class Journey {
               `\nRan in ${frame === this.ui5.shellFrame() ? "the top-level frame" : "an iframe"}: ${describeFrameUrl(frame.url())}`,
             site
           );
+        }
+        // OPA's autoWait waits before each action, not after the last one: the statement would return
+        // while e.g. a save or a navigation is still running. Skip it if the action removed the frame.
+        if (kind !== "then" && this.waitAfter && !frame.isDetached()) {
+          await callBridge(frame, "waitForUI5", [timeout], timeout);
         }
       },
       site

@@ -60,10 +60,11 @@ test("list report to object page", async ({ ui5, fe }) => {
 
 ## Calling test functions
 
-`fe.init(pages, { timeout? })` returns typed `Given` / `When` / `Then` roots:
+`fe.init(pages, { timeout?, waitAfter? })` returns typed `Given` / `When` / `Then` roots:
 
 - Each statement is recorded and only runs when you `await` it. Await every statement.
 - Statements can be chained with `.and`, as in OPA.
+- A `When` statement waits until UI5 is idle after its last action (so does `Given`). After `await When.onTheDetailPage.onFooter().iExecuteSave()` the object is saved, and the next step, also a Playwright locator, sees the result. `{ waitAfter: false }` or [`ui5Options.feWaitAfter`](./configuration#fewaitafter) turns it off.
 - A failing statement throws an error. The message contains the statement, OPA's diagnostics and the last checks that passed, and it points at your test line.
 - Each statement appears as a step in the Playwright report and trace.
 - The timeout per statement is `ui5Options.feTimeout` (default 30 s).

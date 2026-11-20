@@ -17,6 +17,12 @@ export interface UI5Options {
    */
   feTimeout?: number;
   /**
+   * Whether a Fiori elements `Given` / `When` statement waits until UI5 is idle after its last
+   * action (like a `ui5` call does before it acts), so the next step sees the result. `Then`
+   * statements never wait afterwards. `fe.init(pages, { waitAfter })` overrides it. Default: `true`.
+   */
+  feWaitAfter?: boolean;
+  /**
    * CSS selector used by `appFrame: "auto"` to detect the launchpad application iframe.
    */
   launchpadIframeSelector?: string;
@@ -44,6 +50,7 @@ export function resolveOptions(options: UI5Options = {}): ResolvedUI5Options {
     waitForUI5Timeout: options.waitForUI5Timeout ?? 15_000,
     appFrame: options.appFrame ?? "auto",
     feTimeout: options.feTimeout ?? 30_000,
+    feWaitAfter: options.feWaitAfter ?? true,
     launchpadIframeSelector: options.launchpadIframeSelector ?? DEFAULT_LAUNCHPAD_IFRAME_SELECTOR,
     ignoreAutoWaitUrls: options.ignoreAutoWaitUrls ?? []
   };

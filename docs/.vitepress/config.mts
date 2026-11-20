@@ -4,7 +4,7 @@ import llmstxt from "vitepress-plugin-llms";
 const base = "/playwright-ui5/";
 
 export default defineConfig({
-  title: "playwright-ui5",
+  title: "@ahangl/playwright-ui5",
   description:
     "UI5-aware end-to-end testing for Playwright: control API, retrying assertions, Fiori elements test library",
   base,

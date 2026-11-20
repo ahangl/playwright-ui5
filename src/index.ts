@@ -1,6 +1,6 @@
 export { test, expect, type UI5Fixtures, type UI5TestOptions } from "./fixtures";
 export { UI5, type UI5Route } from "./ui5";
-export { FioriElements } from "./fe/FioriElements";
+export { FioriElements, type FioriElementsInitOptions } from "./fe/FioriElements";
 export type {
   FioriElementsChain,
   FioriElementsJourney,

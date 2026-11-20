@@ -15,6 +15,7 @@ export default defineConfig<UI5TestOptions>({
     ui5Options: {
       waitForUI5Timeout: 15_000,
       feTimeout: 30_000,
+      feWaitAfter: true,
       appFrame: "auto",
       ignoreAutoWaitUrls: [/\/longpoll/, "notifications\\?"]
     }
@@ -31,6 +32,7 @@ test.use({ ui5Options: { appFrame: "#application-frame" } });
 | ------------------------- | ----------------------------------- | ----------------------------------------------------------------------------------- |
 | `waitForUI5Timeout`       | `15000`                             | Max. ms to wait for UI5 to become idle and for controls to appear.                  |
 | `feTimeout`               | `30000`                             | Max. ms for a single Fiori elements test library (OPA) statement (only `fe`).       |
+| `feWaitAfter`             | `true`                              | `Given` / `When` statements wait until UI5 is idle after their last action.         |
 | `appFrame`                | `"auto"`                            | Which frame runs the app: `"auto"`, `"main"` or a CSS selector of the app `iframe`. |
 | `launchpadIframeSelector` | `DEFAULT_LAUNCHPAD_IFRAME_SELECTOR` | CSS selector that `appFrame: "auto"` uses to find the launchpad app iframe.         |
 | `ignoreAutoWaitUrls`      | `[]`                                | Requests (XHR and `fetch`) that waiting for UI5 ignores.                            |
@@ -48,6 +50,12 @@ A `timeout` given to `ui5.control()` also applies to later calls on the returned
 ### feTimeout
 
 The timeout of each Fiori elements statement (`await When.onTheMainPage...`). `fe.init(pages, { timeout })` overrides it for one journey.
+
+### feWaitAfter
+
+OPA waits until UI5 is idle before each action, but not after the last one. So a statement such as `When.onTheDetailPage.onFooter().iExecuteSave()` would return while the save request is still running. With `feWaitAfter: true` (default), a `Given` or `When` statement then waits until UI5 is idle, like `ui5.waitForUI5()`, so the next step sees the saved object. The wait is limited by `waitForUI5Timeout`. `Then` statements only check and don't wait afterwards.
+
+`fe.init(pages, { waitAfter: false })` turns it off for one journey. You rarely need that, for example to check a state that only exists while a request is running.
 
 ### appFrame
 

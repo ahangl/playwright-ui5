@@ -4,7 +4,7 @@ OPA5 tests run inside the browser, next to the app, in QUnit. playwright-ui5 tes
 
 - `waitFor` with matchers becomes a selector (`ui5.control(selector)`). It uses the same matchers underneath (UI5's RecordReplay).
 - OPA actions become `press()` and `enterText()`. They are the same OPA actions.
-- `autoWait` is always on: every call waits until UI5 is idle.
+- `autoWait` is always on: every call waits until UI5 is idle. A Fiori elements `When` statement also waits after its last action.
 - The Fiori elements test library (`sap.fe.test`) is the same. Your page definitions and statements stay almost unchanged.
 
 What changes:
