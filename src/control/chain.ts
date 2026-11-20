@@ -1,5 +1,5 @@
 import { callBridge, type ControlDescriptor, type Serialized } from "../bridge/inject";
-import { errorAt, formatArgs, step, withoutSteps } from "../util/step";
+import { enterTextTitle, errorAt, formatArgs, step, withoutSteps } from "../util/step";
 import type { UI5Selector } from "./selector";
 import { contextOf, createRemoteControl, fromBrowser, toBrowser, UI5Control, type RemoteContext } from "./remote";
 
@@ -34,8 +34,9 @@ export interface ChainSource {
   /** e.g. `ui5.control({"controlType":"sap.m.Button"})` or `sap.m.Button#__button0` */
   label: string;
   /**
-   * The value of the chain while it has no steps, without a browser round trip and without a step
-   * of its own - e.g. the control an action (`press()`) was done on.
+   * The value of the chain while it has no steps, without a step of its own - e.g. the control an
+   * action (`press()`) was done on. Only used for `await chain`; re-runs (`expect` matchers) always
+   * go to the browser.
    */
   value?: () => Promise<unknown>;
 }
@@ -88,7 +89,6 @@ function describeHop(hop: Hop | undefined): string {
 
 /** Runs a chain as a step (titled like the chain, located at the caller's line). */
 async function execute(source: ChainSource, steps: Step[], site: Error, timeout?: number): Promise<unknown> {
-  if (!steps.length && source.value) return source.value();
   return step(source.label + describeSteps(steps), () => runChain(source, steps, site, timeout), site);
 }
 
@@ -127,6 +127,23 @@ async function runChain(source: ChainSource, steps: Step[], site: Error, timeout
   throw errorAt(lines.join("\n"), site);
 }
 
+/** `source.value()`, with errors pointing at the caller's line like those of `runChain`. */
+async function valueOf(source: ChainSource, site: Error): Promise<unknown> {
+  try {
+    return await source.value!();
+  } catch (e) {
+    throw errorAt(e instanceof Error ? e.message : String(e), site);
+  }
+}
+
+/**
+ * The control after an action, freshly described (the action may have re-rendered it). If the
+ * action destroyed it (e.g. the OK button of a dialog), the old description is kept.
+ */
+export function refreshed(control: UI5Control): Promise<UI5Control> {
+  return withoutSteps(() => control.reload()).catch(() => control);
+}
+
 function withTimeout(ctx: RemoteContext, timeout?: number): RemoteContext {
   return timeout ? { ...ctx, timeout } : ctx;
 }
@@ -137,7 +154,7 @@ function withTimeout(ctx: RemoteContext, timeout?: number): RemoteContext {
  */
 export function createChain(source: ChainSource, steps: Step[], site: Error): any {
   let cached: Promise<unknown> | undefined;
-  const settle = () => (cached ??= execute(source, steps, site));
+  const settle = () => (cached ??= !steps.length && source.value ? valueOf(source, site) : execute(source, steps, site));
 
   const internals: ChainInternals = {
     description: source.label + describeSteps(steps),
@@ -181,17 +198,17 @@ export function createChain(source: ChainSource, steps: Step[], site: Error): an
         if (ACTIONS.has(prop)) {
           return (...args: unknown[]) => {
             const actionSite = new Error();
-            const what =
-              prop === "press" ? "press" : `enter ${JSON.stringify(String(args[0]))} into`;
+            const title =
+              prop === "press" ? `ui5: press ${internals.description}` : enterTextTitle(args[0], internals.description);
             // Start right away (like UI5Control.press), as one step for the lookup and the action.
             // The returned chain continues on the same control afterwards.
             const acted = step(
-              `ui5: ${what} ${internals.description}`,
+              title,
               () =>
                 withoutSteps(async () => {
                   const c = await control(prop);
-                  await (c as any)[prop](...args);
-                  return c;
+                  // resolves to the freshly described control (see chainAfter)
+                  return (await (c as any)[prop](...args)) as UI5Control;
                 }),
               actionSite
             );
@@ -225,20 +242,17 @@ export function chainFrom(ctx: RemoteContext, ref: Ref, label: string, method: s
 }
 
 /**
- * A chain on a control that continues after `before` (an action that already started), e.g. the
- * result of `control.press()`.
+ * A chain on a control that continues after `before` (an action that already started and
+ * resolves to the control afterwards), e.g. the result of `control.press()`.
  */
-export function chainAfter(control: UI5Control, label: string, before: Promise<unknown>): any {
+export function chainAfter(label: string, before: Promise<UI5Control>): any {
   return createChain(
     {
       label,
-      value: async () => {
-        await before;
-        return control;
-      },
+      value: () => before,
       resolve: async (timeout) => {
-        await before;
-        return { ctx: withTimeout(contextOf(control), timeout), start: { ref: { id: control.id } } };
+        const c = await before;
+        return { ctx: withTimeout(contextOf(c), timeout), start: { ref: { id: c.id } } };
       },
     },
     [],

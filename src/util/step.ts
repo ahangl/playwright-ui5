@@ -78,7 +78,13 @@ export async function step<T>(title: string, body: () => Promise<T>, site?: Erro
 const MAX_TITLE = 150;
 
 function shortTitle(title: string): string {
-  return title.length > MAX_TITLE ? title.slice(0, MAX_TITLE - 1) + "…" : title;
+  const chars = Array.from(title); // code points, so that e.g. emojis are not cut in half
+  return chars.length > MAX_TITLE ? chars.slice(0, MAX_TITLE - 1).join("") + "…" : title;
+}
+
+/** Step title of `enterText`, e.g. `ui5: enter "Poe" into sap.m.Input#id`. */
+export function enterTextTitle(text: unknown, target: string): string {
+  return `ui5: enter ${JSON.stringify(String(text))} into ${target}`;
 }
 
 const quiet = new AsyncLocalStorage<boolean>();

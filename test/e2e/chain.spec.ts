@@ -82,6 +82,42 @@ test.describe("fluent chaining", () => {
     expect(pressed.className).toBe("sap.m.Button");
   });
 
+  test("a failed press points at the test line", async ({ ui5 }) => {
+    const go = await ui5.control(GO_BUTTON, { timeout: 1_000 });
+    await go.exec((control: any) => control.setEnabled(false));
+
+    const direct = await errorOf(go.press());
+    expect(direct?.message).toMatch(/is not interactable/);
+    expect(direct?.stack?.split("\n").at(-1)).toMatch(/^\s+at .*chain\.spec\.ts:\d+:\d+/);
+
+    const shortcut = await errorOf(ui5.press(GO_BUTTON, { timeout: 1_000 }));
+    expect(shortcut?.message).toMatch(/is not interactable/);
+    expect(shortcut?.stack?.split("\n").at(-1)).toMatch(/^\s+at .*chain\.spec\.ts:\d+:\d+/);
+  });
+
+  test("an action resolves to the freshly described control", async ({ ui5 }) => {
+    const pressed = await ui5.control(GO_BUTTON).press();
+    expect(pressed.domRefId).toBe((await pressed.reload()).domRefId);
+    // the retrying matchers re-read the control of an action chain
+    await expect(ui5.control(GO_BUTTON).press()).toBeUI5Enabled({ timeout: 2_000 });
+  });
+
+  test("an action that destroys its control still succeeds", async ({ ui5 }) => {
+    await ui5.exec(() => {
+      const Button = (window as any).sap.ui.require("sap/m/Button");
+      new Button({
+        text: "Self-destruct",
+        press(this: any) {
+          this.destroy();
+        },
+      }).placeAt(document.body);
+    });
+    const button = await ui5.control({ controlType: "sap.m.Button", properties: { text: "Self-destruct" } });
+    const pressed = await button.press();
+    expect(pressed.id).toBe(button.id);
+    expect(await ui5.controlOrNull({ id: button.id }, { timeout: 500 })).toBeNull();
+  });
+
   test("a failed action rejects the chain and later steps do not run", async ({ ui5 }) => {
     const go = await ui5.control(GO_BUTTON, { timeout: 1_000 });
     await go.exec((control: any) => control.setEnabled(false));

@@ -245,17 +245,17 @@ const BRIDGE_VERSION = "1";
     const sel = deser(selector);
     let lastError: unknown;
     do {
+      let ctl: any;
       try {
         await M.RecordReplay.waitForUI5({ timeout: Math.max(deadline - Date.now(), 1000), interval: 100 });
         const el = await M.RecordReplay.findDOMElementByControlSelector({ selector: rootSelector(sel) });
-        const ctl = el && controlFromDom(el);
-        if (ctl) {
-          const interactionEl =
-            sel && sel.interaction ? await M.RecordReplay.findDOMElementByControlSelector({ selector: sel }) : null;
-          return { ctl, interactionEl };
-        }
+        ctl = el && controlFromDom(el);
       } catch (e) {
         lastError = e;
+      }
+      if (ctl) {
+        // outside of the retry: a control without the requested element is an error of its own
+        return { ctl, interactionEl: sel && sel.interaction ? await interactionElement(ctl, sel.interaction) : null };
       }
       await sleep(200);
     } while (Date.now() < deadline);
@@ -263,6 +263,25 @@ const BRIDGE_VERSION = "1";
       throw new Error(errMessage(lastError));
     }
     return null;
+  }
+
+  /** The DOM element of `ctl` that a selector's `interaction` designates; throws a clear error if there is none. */
+  async function interactionElement(ctl: any, interaction: unknown): Promise<Element> {
+    let el: Element | null = null;
+    let reason = "";
+    try {
+      el = await M.RecordReplay.findDOMElementByControlSelector({ selector: { id: ctl.getId(), interaction } });
+    } catch (e) {
+      reason = errMessage(e);
+    }
+    if (!el) {
+      const what = typeof interaction === "string" ? interaction : JSON.stringify(interaction);
+      throw new Error(
+        `playwright-ui5: control ${typeName(ctl)}#${ctl.getId()} has no '${what}' element for interaction` +
+          (reason ? ` (${reason})` : "")
+      );
+    }
+    return el;
   }
 
   async function findControl(selector: any, timeout: number): Promise<ControlDescriptor | null> {
@@ -284,9 +303,7 @@ const BRIDGE_VERSION = "1";
       const ctl = controlFromDom(el);
       if (ctl && !seen.has(ctl.getId())) {
         seen.add(ctl.getId());
-        const interactionEl = sel && sel.interaction
-          ? await RR.findDOMElementByControlSelector({ selector: { id: ctl.getId(), interaction: sel.interaction } })
-          : null;
+        const interactionEl = sel && sel.interaction ? await interactionElement(ctl, sel.interaction) : null;
         out.push(describe(ctl, interactionEl));
       }
     }

@@ -1,7 +1,7 @@
 import type { Frame, Locator } from "@playwright/test";
 import { callBridge, type ControlDescriptor, type Serialized } from "../bridge/inject";
-import { step, formatArgs } from "../util/step";
-import { chainAfter, chainFrom } from "./chain";
+import { enterTextTitle, step, formatArgs } from "../util/step";
+import { chainAfter, chainFrom, refreshed } from "./chain";
 
 const REF = Symbol.for("playwright-ui5.ref");
 const CTX = Symbol.for("playwright-ui5.ctx");
@@ -275,8 +275,9 @@ export class UI5Control {
       } else {
         await callBridge(this.ctx.frame, "interact", [this.id, "PRESS", undefined, false, this.ctx.timeout], this.ctx.timeout);
       }
+      return refreshed(this);
     });
-    return chainAfter(this, `${this.className}#${this.id}.press()`, done);
+    return chainAfter(`${this.className}#${this.id}.press()`, done);
   }
 
   /**
@@ -287,15 +288,16 @@ export class UI5Control {
    * `await input.enterText("Poe").getValue()`.
    */
   enterText(text: string, options: { clearTextFirst?: boolean } = {}): ControlChain {
-    const done = step(`ui5: enter "${text}" into ${this.className}#${this.id}`, async () => {
+    const done = step(enterTextTitle(text, `${this.className}#${this.id}`), async () => {
       await callBridge(
         this.ctx.frame,
         "interact",
         [this.id, "ENTER_TEXT", text, options.clearTextFirst ?? true, this.ctx.timeout],
         this.ctx.timeout
       );
+      return refreshed(this);
     });
-    return chainAfter(this, `${this.className}#${this.id}.enterText(${formatArgs([text])})`, done);
+    return chainAfter(`${this.className}#${this.id}.enterText(${formatArgs([text])})`, done);
   }
 
   /**

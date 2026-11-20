@@ -130,14 +130,14 @@ export class UI5 {
   async goTo(target: string | UI5Route, options: { timeout?: number } = {}): Promise<void> {
     if (typeof target !== "string") {
       const { route, params, componentId, replace, componentTargetInfo } = target;
-      await step(`ui5: go to route ${route}${params ? " " + JSON.stringify(params) : ""}`, async () => {
+      await step(`${this.label}: go to route ${route}${params ? " " + JSON.stringify(params) : ""}`, async () => {
         const { frame, timeout } = await this.ctx(options.timeout);
         await callBridge(frame, "navTo", [route, params, componentId, !!replace, componentTargetInfo, timeout], timeout);
         await withoutSteps(() => this.waitForUI5(options));
       });
       return;
     }
-    await step(`ui5: go to ${target}`, async () => {
+    await step(`${this.label}: go to ${target}`, async () => {
       let url = target;
       if (target.startsWith("#")) {
         const current = this.page.url();

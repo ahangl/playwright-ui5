@@ -97,6 +97,14 @@ test.describe("control API (standalone app)", () => {
     expect(await ui5.control(AUTHOR_FILTER).getConditions()).toHaveLength(0); // not yet submitted
   });
 
+  test("a missing interaction element fails right away with a clear message", async ({ ui5 }) => {
+    const started = Date.now();
+    await expect(
+      ui5.locator({ ...AUTHOR_FILTER, interaction: { idSuffix: "doesNotExist" } }, { timeout: 5_000 })
+    ).rejects.toThrow(/sap\.ui\.mdc\.FilterField#.* has no '\{"idSuffix":"doesNotExist"\}' element/);
+    expect(Date.now() - started).toBeLessThan(4_000);
+  });
+
   test("navigates with the app's router", async ({ ui5, page }) => {
     await ui5.goTo({ route: "BooksObjectPage", params: { key: "251" }, componentTargetInfo: undefined });
     expect(page.url()).toContain("#/Books(251)");
