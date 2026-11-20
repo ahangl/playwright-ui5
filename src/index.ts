@@ -9,7 +9,9 @@ export type {
   FioriElementsPageDefinition,
   FioriElementsPages,
   FioriElementsRoot,
-  FioriElementsStep
+  FioriElementsStep,
+  FioriElementsTableIdentifier,
+  UntypedFioriElementsChain
 } from "./fe/types";
 export { resolveOptions, DEFAULT_LAUNCHPAD_IFRAME_SELECTOR, type UI5Options, type ResolvedUI5Options } from "./config";
 export type { UI5Selector } from "./control/selector";

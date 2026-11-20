@@ -11,5 +11,5 @@
     "skipLibCheck": false,
     "noEmit": true
   },
-  "files": ["consumer.ts"]
+  "files": ["consumer.ts", "../fe-on-table.ts"]
 }

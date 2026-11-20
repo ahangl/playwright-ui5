@@ -1,0 +1,18 @@
+[
+  {
+    "code": "drama",
+    "name": "Drama"
+  },
+  {
+    "code": "mystery",
+    "name": "Mystery"
+  },
+  {
+    "code": "romance",
+    "name": "Romance"
+  },
+  {
+    "code": "fantasy",
+    "name": "Fantasy"
+  }
+]

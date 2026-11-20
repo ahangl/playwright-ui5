@@ -38,7 +38,7 @@
   },
   "scripts": {
     "build": "tsup && node scripts/mark-optional-types.mjs",
-    "typecheck": "npm run build --silent && tsc --noEmit -p tsconfig.json && tsc --noEmit -p tsconfig.browser.json && tsc --noEmit -p test/types/without-sapui5",
+    "typecheck": "npm run build --silent && tsc --noEmit -p tsconfig.json && tsc --noEmit -p tsconfig.browser.json && tsc --noEmit -p test/types/without-sapui5 && tsc --noEmit -p test/types/with-sapui5",
     "start:app": "cd test/fixture-app && ui5 serve --port 8080",
     "test": "npm run build && playwright test --project=local",
     "test:workzone": "npm run build && playwright test --project=workzone",

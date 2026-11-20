@@ -47,7 +47,9 @@
       "config": {},
       "routes": [
         { "pattern": ":?query:", "name": "BooksList", "target": "BooksList" },
-        { "pattern": "Books({key}):?query:", "name": "BooksObjectPage", "target": "BooksObjectPage" }
+        { "pattern": "Books({key}):?query:", "name": "BooksObjectPage", "target": "BooksObjectPage" },
+        { "pattern": "Authors:?query:", "name": "AuthorsList", "target": "AuthorsList" },
+        { "pattern": "Authors({key}):?query:", "name": "AuthorsObjectPage", "target": "AuthorsObjectPage" }
       ],
       "targets": {
         "BooksList": {
@@ -72,6 +74,31 @@
           "options": {
             "settings": {
               "contextPath": "/Books",
+              "editableHeaderContent": false
+            }
+          }
+        },
+        "AuthorsList": {
+          "type": "Component",
+          "id": "AuthorsList",
+          "name": "sap.fe.templates.ListReport",
+          "options": {
+            "settings": {
+              "contextPath": "/Authors",
+              "initialLoad": "Enabled",
+              "navigation": {
+                "Authors": { "detail": { "route": "AuthorsObjectPage" } }
+              }
+            }
+          }
+        },
+        "AuthorsObjectPage": {
+          "type": "Component",
+          "id": "AuthorsObjectPage",
+          "name": "sap.fe.templates.ObjectPage",
+          "options": {
+            "settings": {
+              "contextPath": "/Authors",
               "editableHeaderContent": false
             }
           }

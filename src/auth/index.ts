@@ -20,7 +20,10 @@ export function credentialsFromEnv(prefix = "UI5"): Credentials {
 }
 
 export interface LoginOptions {
-  /** URL of the Work Zone site / application to log in to. */
+  /**
+   * Absolute URL of the Work Zone site / application to log in to. To build it from Playwright's
+   * `baseURL`, use `new URL("site/launchpad", baseURL).href`.
+   */
   url: string;
   /** Default: `ias()` */
   provider?: AuthProvider;
@@ -47,6 +50,12 @@ export interface LoginOptions {
  * });
  */
 export async function login(page: Page, options: LoginOptions): Promise<void> {
+  if (!URL.canParse(options.url)) {
+    throw new Error(
+      `playwright-ui5: login() needs an absolute url, got ${JSON.stringify(options.url)}; ` +
+        `build it with new URL(path, baseURL).href`
+    );
+  }
   const provider = options.provider ?? ias();
   await provider.login(page, {
     url: options.url,

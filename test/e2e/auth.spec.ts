@@ -111,6 +111,15 @@ test.describe("SAP IAS authentication", () => {
     ).rejects.toThrow(/did not complete: Sorry, we could not authenticate you/);
   });
 
+  test("rejects a relative url with a clear message", async ({ page }) => {
+    await expect(
+      login(page, { url: "site/launchpad?sap-language=en#Shell-home", provider: ias(), credentials: USER })
+    ).rejects.toThrow(
+      'login() needs an absolute url, got "site/launchpad?sap-language=en#Shell-home"; build it with new URL(path, baseURL).href'
+    );
+    expect(page.url()).toBe("about:blank"); // fails before opening anything
+  });
+
   test("does nothing when the session is still valid", async ({ page, context }) => {
     await fakeLandscape(context, { flow: "onepage" });
     await context.addCookies([{ name: "WZSESSION", value: "ok", url: WORKZONE }]);
