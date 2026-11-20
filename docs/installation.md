@@ -19,7 +19,7 @@ Optional: SAP's UI5 typings give you typed control methods and typed Fiori eleme
 npm i -D @sapui5/types
 ```
 
-Use `@sapui5/types` 1.150 or later. Older versions declare some optional arguments of the Fiori elements test library as required, e.g. the identifier of `onTable()`. The version of the typings doesn't have to match the UI5 version your app runs.
+Any version of `@sapui5/types` works. It doesn't have to match the UI5 version your app runs; newer typings describe the APIs more accurately.
 
 ## Configure Playwright
 

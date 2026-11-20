@@ -40,7 +40,7 @@ Add `.auth/` to `.gitignore`.
 
 ### Absolute URL
 
-`login({ url })` needs an absolute URL. A relative path fails with `TypeError: Invalid URL`. To build it from the project's `baseURL`, give the setup project a `baseURL` and use the `baseURL` fixture:
+`login({ url })` needs an absolute URL. A relative path fails right away with `playwright-ui5: login() needs an absolute url, got "site/launchpad"; build it with new URL(path, baseURL).href`. To build it from the project's `baseURL`, give the setup project a `baseURL` and use the `baseURL` fixture:
 
 ```ts
 // playwright.config.ts

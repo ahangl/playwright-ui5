@@ -134,27 +134,25 @@ await When.onTheMainPage.onTable().iPressRow({ "Book ID": "251" }); // open a ro
 // Object page
 await Then.onTheDetailPage.iSeeThisPage();
 await Then.onTheDetailPage.onHeader().iCheckTitle("The Raven");
-await When.onTheDetailPage.iGoToSection("Recipients"); // also renders the tables of that section
-await When.onTheDetailPage.onTable("Recipients").iExecuteCreate();
+await When.onTheDetailPage.iGoToSection("Reviews"); // also renders the tables of that section
+await When.onTheDetailPage.onTable("Reviews").iExecuteCreate();
 ```
 
 `.and.iExecuteSearch()` presses the **Go** button of the filter bar. A filter bar in live mode has no Go button, see [Troubleshooting](#troubleshooting).
 
 Notes on the typings and arguments:
 
-- Without `@sapui5/types` the chains are untyped, but they work the same.
+- Without `@sapui5/types` the chains are untyped: any function name compiles, and they work the same. Only `onTable()` is typed (see below).
 - SAP's typings are sometimes stricter than the runtime. For example, `iCheckRows(5)` is typed as `iCheckRows({}, 5)`.
-- **`onTable()` without an argument** uses the page's default table. A list report with one table needs no identifier. Don't pass an empty object: `onTable({})` builds the table id `fe::table::undefined::LineItem`, and the statement times out with `Found no control with ID 'fe::table::undefined::LineItem'`.
-
-  `@sapui5/types` before 1.150 declares the identifier as required. Update the typings (their version is independent of the UI5 version your app runs), or mark the call:
+- **`onTable(table?)`**: without an argument, the page's default table is used. A list report with one table needs no identifier. Otherwise pass the table's header title or `{ property, qualifier? }`:
 
   ```ts
-  await Then.onTheMainPage.onTable().iCheckRows({}, 2); // @sapui5/types 1.150 or later
-
-  // @sapui5/types before 1.150:
-  // @ts-expect-error -- the identifier is optional at runtime
-  await Then.onTheMainPage.onTable().iCheckRows({}, 2);
+  await Then.onTheMainPage.onTable().iCheckRows({}, 2); // the only table of the page
+  await When.onTheDetailPage.onTable("Reviews").iExecuteCreate(); // by header title
+  await Then.onTheDetailPage.onTable({ property: "reviews" }).iCheckRows({}, 1); // by navigation property
   ```
+
+  An empty object is a type error, also without `@sapui5/types`: `onTable({})` would build the table id `fe::table::undefined::LineItem`, and the statement would time out. `onTable()` compiles with every version of `@sapui5/types`, also before 1.150, where SAP declares the identifier as required.
 
 - **`iCheckTitle(title, description?)`** compares the whole text, not a part of it. Omit the description or pass `undefined` to skip it. `iCheckTitle(title, "")` fails when the header has no description. For a partial match, use the control API:
 
@@ -204,13 +202,13 @@ The library injects a small bridge into the app frame. The bridge creates the `s
 
 - **`unknown page 'x'`**: the page name isn't in the object passed to `fe.init`.
 - **A table or field isn't found:** check `componentId` and `contextPath` / `entitySet` against the manifest. A List Report with several table views (different entity sets per tab) can't be addressed with one page config. Use the control API for the other tabs, see [Recipes](./recipes#list-report-with-several-table-views).
-- **`Found no control with ID 'fe::table::undefined::LineItem'`:** the statement uses `onTable({})`. Call `onTable()` without an argument, see [Notes on the typings and arguments](#frequently-used).
+- **`Found no control with ID 'fe::table::undefined::LineItem'`:** the statement passes an empty object, `onTable({})` (in TypeScript a type error, but possible in JavaScript or behind a cast). Call `onTable()` without an argument, see [Notes on the typings and arguments](#frequently-used).
 - **`DOM representation of control '...FilterBar...' has no element with user-provided ID suffix 'btnSearch'`:** `iExecuteSearch()` looks for the Go button, but the filter bar runs in live mode and has none. Change the search field and press Enter instead, see [Recipes](./recipes#search-in-a-filter-bar-without-a-go-button).
-- **`Control '...::LineItem' is not rendered`** on an object page, e.g. for `onTable("Recipients").iExecuteCreate()`: the tables of an object page section are created when the section is shown. Go to the section first:
+- **`Control '...::LineItem' is not rendered`** on an object page, e.g. for `onTable("Reviews").iExecuteCreate()`: the tables of an object page section are created when the section is shown. Go to the section first:
 
   ```ts
-  await When.onTheDetailPage.iGoToSection("Recipients");
-  await When.onTheDetailPage.onTable("Recipients").iExecuteCreate();
+  await When.onTheDetailPage.iGoToSection("Reviews");
+  await When.onTheDetailPage.onTable("Reviews").iExecuteCreate();
   ```
 
 - **Timeouts:** increase `ui5Options.feTimeout` or pass `fe.init(pages, { timeout })`.

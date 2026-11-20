@@ -13,7 +13,7 @@ Everything except the Fiori elements test library works in any UI5 app: freestyl
 
 ```bash
 npm i -D @ahangl/playwright-ui5 @playwright/test
-# optional (1.150 or later), gives typed Fiori elements chains and typed control methods:
+# optional, gives typed Fiori elements chains and typed control methods:
 npm i -D @sapui5/types
 ```
 
