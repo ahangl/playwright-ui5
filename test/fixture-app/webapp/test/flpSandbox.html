@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
   <head>
     <meta charset="utf-8" />
@@ -15,12 +15,15 @@
             description: "embedded",
             applicationType: "SAPUI5",
             additionalInformation: "SAPUI5.Component=fixture.books",
-            url: "../",
-          },
-        },
+            url: "../"
+          }
+        }
       };
     </script>
-    <script src="https://ui5.sap.com/1.154.0/test-resources/sap/ushell/bootstrap/sandbox.js" id="sap-ushell-bootstrap"></script>
+    <script
+      src="https://ui5.sap.com/1.154.0/test-resources/sap/ushell/bootstrap/sandbox.js"
+      id="sap-ushell-bootstrap"
+    ></script>
     <script
       id="sap-ui-bootstrap"
       src="https://ui5.sap.com/1.154.0/resources/sap-ui-core.js"
@@ -33,11 +36,13 @@
     ></script>
     <script>
       sap.ui.require(["sap/ui/core/Core"], function (Core) {
-        Core.ready().then(function () {
-          return sap.ushell.Container.createRenderer("fiori2", true);
-        }).then(function (renderer) {
-          renderer.placeAt("content");
-        });
+        Core.ready()
+          .then(function () {
+            return sap.ushell.Container.createRenderer("fiori2", true);
+          })
+          .then(function (renderer) {
+            renderer.placeAt("content");
+          });
       });
     </script>
   </head>

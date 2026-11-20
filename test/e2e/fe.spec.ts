@@ -1,8 +1,9 @@
+/* eslint-disable @typescript-eslint/no-explicit-any -- UI5 controls inside exec() callbacks are untyped. */
 import { test, expect } from "@ahangl/playwright-ui5";
 
 const pages = {
   onTheMainPage: { ListReport: { appId: "fixture.books", componentId: "BooksList", contextPath: "/Books" } },
-  onTheDetailPage: { ObjectPage: { appId: "fixture.books", componentId: "BooksObjectPage", contextPath: "/Books" } },
+  onTheDetailPage: { ObjectPage: { appId: "fixture.books", componentId: "BooksObjectPage", contextPath: "/Books" } }
 } as const;
 
 test.describe("Fiori elements test library", () => {

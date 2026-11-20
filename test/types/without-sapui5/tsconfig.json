@@ -1,0 +1,15 @@
+{
+  // A consumer that does not install the optional peer dependency @sapui5/types and checks the
+  // declaration files of its dependencies (skipLibCheck: false). The published types must compile.
+  "compilerOptions": {
+    "target": "ES2022",
+    "module": "ESNext",
+    "moduleResolution": "Bundler",
+    "lib": ["ES2022", "DOM"],
+    "types": ["node"],
+    "strict": true,
+    "skipLibCheck": false,
+    "noEmit": true
+  },
+  "files": ["consumer.ts"]
+}

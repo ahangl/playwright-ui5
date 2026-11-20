@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any -- UI5 controls inside exec() callbacks are untyped. */
 import { test, expect, type RemoteControl } from "@ahangl/playwright-ui5";
 import type Button from "sap/m/Button";
 
@@ -110,13 +111,15 @@ test.describe("control API (standalone app)", () => {
     expect(page.url()).toContain("#/Books(251)");
     await expect(ui5.control({ controlType: "sap.uxap.ObjectPageLayout" })).toBeUI5Visible();
 
-    await expect(ui5.goTo({ route: "Nope" })).rejects.toThrow(/route 'Nope' does not exist .*routes: BooksList, BooksObjectPage/);
+    await expect(ui5.goTo({ route: "Nope" })).rejects.toThrow(
+      /route 'Nope' does not exist .*routes: BooksList, BooksObjectPage/
+    );
   });
 
   test("fails with a helpful message when nothing matches", async ({ ui5 }) => {
-    await expect(ui5.control({ controlType: "sap.m.Button", properties: { text: "Nope" } }, { timeout: 1500 })).rejects.toThrow(
-      /no control found for selector .*Nope/
-    );
+    await expect(
+      ui5.control({ controlType: "sap.m.Button", properties: { text: "Nope" } }, { timeout: 1500 })
+    ).rejects.toThrow(/no control found for selector .*Nope/);
     expect(await ui5.controlOrNull({ id: "does-not-exist" }, { timeout: 500 })).toBeNull();
   });
 });

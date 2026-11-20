@@ -93,7 +93,7 @@ const BRIDGE_VERSION = "1";
   const ready: Promise<void> = requireAsync([
     "sap/ui/test/RecordReplay",
     "sap/ui/core/Element",
-    "sap/ui/core/Core",
+    "sap/ui/core/Core"
   ]).then(([RecordReplay, Element, Core]) => {
     M.RecordReplay = RecordReplay;
     M.Element = Element;
@@ -118,8 +118,7 @@ const BRIDGE_VERSION = "1";
   }
 
   function methodsOf(obj: any): string[] {
-    const className =
-      obj && typeof obj.getMetadata === "function" ? obj.getMetadata().getName() : undefined;
+    const className = obj && typeof obj.getMetadata === "function" ? obj.getMetadata().getName() : undefined;
     if (className && methodCache.has(className)) return methodCache.get(className)!;
     const names = new Set<string>();
     let proto = Object.getPrototypeOf(obj);
@@ -143,7 +142,7 @@ const BRIDGE_VERSION = "1";
       id: control.getId(),
       className: control.getMetadata().getName(),
       domRefId: dom && dom.id ? dom.id : null,
-      methods: methodsOf(control),
+      methods: methodsOf(control)
     };
   }
 
@@ -197,7 +196,8 @@ const BRIDGE_VERSION = "1";
 
   function resolveTarget(target: Target): any {
     if (target.h) {
-      if (!handles.has(target.h)) throw new Error(`playwright-ui5: object handle ${target.h} is no longer available (page reloaded?)`);
+      if (!handles.has(target.h))
+        throw new Error(`playwright-ui5: object handle ${target.h} is no longer available (page reloaded?)`);
       return handles.get(target.h);
     }
     const ctl = byId(target.id!);
@@ -385,7 +385,12 @@ const BRIDGE_VERSION = "1";
         if (index !== undefined) {
           const all = fn.call(current) || [];
           if (index < 0 || index >= all.length) {
-            return { ok: false, failedAt: i, error: `index ${index} out of range (${m}() returned ${all.length} items)`, hops };
+            return {
+              ok: false,
+              failedAt: i,
+              error: `index ${index} out of range (${m}() returned ${all.length} items)`,
+              hops
+            };
           }
           result = all[index];
         } else {
@@ -479,7 +484,7 @@ const BRIDGE_VERSION = "1";
       selector: { id },
       interactionType: type,
       enterText: text,
-      clearTextFirst,
+      clearTextFirst
     });
   }
 
@@ -555,7 +560,7 @@ const BRIDGE_VERSION = "1";
       const [Opa5, Opa, ...classes] = await requireAsync([
         "sap/ui/test/Opa5",
         "sap/ui/test/Opa",
-        ...types.map((t) => "sap/fe/test/" + t),
+        ...types.map((t) => "sap/fe/test/" + t)
       ]);
       M.Opa5 = Opa5;
       M.Opa = Opa;
@@ -571,7 +576,7 @@ const BRIDGE_VERSION = "1";
       Opa.extendConfig({
         timeout: Math.max(1, Math.ceil(opts.timeout / 1000)),
         pollingInterval: 200,
-        autoWait: true,
+        autoWait: true
       });
 
       // Outside of QUnit there is no Opa5.assert; sap.fe.test reports every check through it.
@@ -587,7 +592,7 @@ const BRIDGE_VERSION = "1";
         deepEqual: (a: unknown, b: unknown, m?: string) => push(JSON.stringify(a) === JSON.stringify(b), m),
         propEqual: (a: unknown, b: unknown, m?: string) => push(JSON.stringify(a) === JSON.stringify(b), m),
         expect: () => undefined,
-        step: (m: string) => push(true, m),
+        step: (m: string) => push(true, m)
       };
       fe.configKey = opts.configKey;
     },
@@ -640,7 +645,7 @@ const BRIDGE_VERSION = "1";
       const failed = fe.log.find((l) => !l.ok);
       if (failed) return { ok: false, error: failed.message, log: fe.log };
       return { ok: true, log: fe.log };
-    },
+    }
   };
 
   w.__pwui5 = {
@@ -660,6 +665,6 @@ const BRIDGE_VERSION = "1";
     deser,
     resolveTarget,
     byId,
-    fe,
+    fe
   };
 })();

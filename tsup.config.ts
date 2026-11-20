@@ -11,7 +11,7 @@ const bridgeSourcePlugin: Plugin = {
   setup(pluginBuild) {
     pluginBuild.onResolve({ filter: /^virtual:pwui5-bridge$/ }, () => ({
       path: "bridge",
-      namespace: "pwui5-bridge",
+      namespace: "pwui5-bridge"
     }));
     pluginBuild.onLoad({ filter: /.*/, namespace: "pwui5-bridge" }, async () => {
       const result = await build({
@@ -20,15 +20,15 @@ const bridgeSourcePlugin: Plugin = {
         format: "iife",
         target: "es2019",
         minify: true,
-        write: false,
+        write: false
       });
       return {
         contents: `export default ${JSON.stringify(result.outputFiles[0].text)};`,
         loader: "js",
-        watchFiles: ["src/browser/bridge.ts"],
+        watchFiles: ["src/browser/bridge.ts"]
       };
     });
-  },
+  }
 };
 
 export default defineConfig({
@@ -39,5 +39,5 @@ export default defineConfig({
   clean: true,
   target: "node18",
   external: ["@playwright/test"],
-  esbuildPlugins: [bridgeSourcePlugin],
+  esbuildPlugins: [bridgeSourcePlugin]
 });

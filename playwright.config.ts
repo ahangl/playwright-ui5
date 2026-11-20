@@ -14,27 +14,27 @@ export default defineConfig<UI5TestOptions>({
   reporter: [["list"], ["html", { open: "never" }]],
   use: {
     trace: "retain-on-failure",
-    screenshot: "only-on-failure",
+    screenshot: "only-on-failure"
   },
   webServer: {
     command: "npm run start:app",
     url: `${FIXTURE_URL}/index.html`,
     reuseExistingServer: true,
-    timeout: 120_000,
+    timeout: 120_000
   },
   projects: [
     // Self-tests against the local Fiori elements fixture app (mock OData service)
     {
       name: "local",
       testDir: "test/e2e",
-      use: { ...devices["Desktop Chrome"], baseURL: FIXTURE_URL },
+      use: { ...devices["Desktop Chrome"], baseURL: FIXTURE_URL }
     },
     // SAP Build Work Zone: log in once, then reuse the session (opt-in, needs WORKZONE_URL + UI5_USERNAME/UI5_PASSWORD)
     {
       name: "workzone-setup",
       testDir: "test/workzone",
       testMatch: /.*\.setup\.ts/,
-      use: { ...devices["Desktop Chrome"], baseURL: WORKZONE_URL },
+      use: { ...devices["Desktop Chrome"], baseURL: WORKZONE_URL }
     },
     {
       name: "workzone",
@@ -44,8 +44,8 @@ export default defineConfig<UI5TestOptions>({
       use: {
         ...devices["Desktop Chrome"],
         baseURL: WORKZONE_URL,
-        storageState: ".auth/workzone.json",
-      },
-    },
-  ],
+        storageState: ".auth/workzone.json"
+      }
+    }
+  ]
 });

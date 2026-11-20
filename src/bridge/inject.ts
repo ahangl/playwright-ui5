@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any -- UI5 objects in the browser are untyped. */
 import type { Frame, Page } from "@playwright/test";
 import bridgeSource from "virtual:pwui5-bridge";
 import { cleanStack } from "../util/step";
@@ -36,7 +37,7 @@ function wireConfig(config: BridgeConfig) {
   return {
     ignoreAutoWaitUrls: config.ignoreAutoWaitUrls.map((p) =>
       p instanceof RegExp ? { source: p.source, flags: p.flags } : { source: p, flags: "" }
-    ),
+    )
   };
 }
 
@@ -46,7 +47,7 @@ export async function ensureBridge(frame: Frame, timeout: number): Promise<void>
     const w = window as any;
     return {
       ui5: !!(w.sap && w.sap.ui && typeof w.sap.ui.require === "function"),
-      bridge: !!w.__pwui5,
+      bridge: !!w.__pwui5
     };
   });
   if (state.bridge) return;

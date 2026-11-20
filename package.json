@@ -37,29 +37,47 @@
     "node": ">=18"
   },
   "scripts": {
-    "build": "tsup",
-    "typecheck": "tsup --silent && tsc --noEmit -p tsconfig.json && tsc --noEmit -p tsconfig.browser.json",
+    "build": "tsup && node scripts/mark-optional-types.mjs",
+    "typecheck": "npm run build --silent && tsc --noEmit -p tsconfig.json && tsc --noEmit -p tsconfig.browser.json && tsc --noEmit -p test/types/without-sapui5",
     "start:app": "cd test/fixture-app && ui5 serve --port 8080",
     "test": "npm run build && playwright test --project=local",
-    "test:workzone": "npm run build && playwright test --project=workzone"
+    "test:workzone": "npm run build && playwright test --project=workzone",
+    "lint": "eslint .",
+    "lint:fix": "eslint . --fix",
+    "format": "prettier --check .",
+    "format:fix": "prettier --write .",
+    "changeset": "changeset",
+    "version-packages": "changeset version",
+    "release": "changeset publish",
+    "prepublishOnly": "npm run lint && npm run format && npm run typecheck"
   },
   "peerDependencies": {
     "@playwright/test": ">=1.40.0",
     "@sapui5/types": ">=1.120.0"
   },
   "devDependencies": {
+    "@changesets/cli": "^3.0.3",
+    "@eslint/js": "^10.0.1",
     "@playwright/test": "^1.65.1",
     "@sap-ux/ui5-middleware-fe-mockserver": "^2.4.19",
     "@sapui5/types": "~1.154.0",
     "@types/node": "^22.0.0",
     "@ui5/cli": "^4.1.0",
     "dotenv": "^16.4.0",
+    "eslint": "^10.15.0",
+    "eslint-config-prettier": "^10.1.8",
+    "globals": "^17.14.0",
+    "prettier": "^3.10.1",
     "tsup": "^8.5.1",
-    "typescript": "~5.9.3"
+    "typescript": "~5.9.3",
+    "typescript-eslint": "^8.73.0"
   },
   "peerDependenciesMeta": {
     "@sapui5/types": {
       "optional": true
     }
+  },
+  "publishConfig": {
+    "access": "public"
   }
 }

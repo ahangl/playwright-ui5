@@ -1,8 +1,10 @@
+/* eslint-disable @typescript-eslint/no-explicit-any -- the chains are `any` without @sapui5/types. */
 /*
  * Types for the Fiori elements test library facade.
  *
  * The method signatures come from SAP's own typings of `sap.fe.test` in `@sapui5/types`
  * (optional peer dependency). Without it installed, the chains are untyped (`any`) but work the same.
+ * The build marks these imports with `// @ts-ignore` in dist (scripts/mark-optional-types.mjs).
  */
 import type ListReport from "sap/fe/test/ListReport";
 import type ObjectPage from "sap/fe/test/ObjectPage";

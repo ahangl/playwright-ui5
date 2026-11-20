@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any -- UI5 controls inside exec() callbacks are untyped. */
 import { test, expect, type RemoteControl } from "@ahangl/playwright-ui5";
 import type Table from "sap/m/Table";
 import type Button from "sap/m/Button";
@@ -19,7 +20,9 @@ test.describe("fluent chaining", () => {
 
   test("runs a typed chain with a single await", async ({ ui5 }) => {
     expect(await ui5.control<Table>(TABLE).getItems(0).getBindingContextPath()).toBe("/Books(201)");
-    expect(await ui5.control<Table>(TABLE).getItems(0).getBindingContext()!.getProperty("title")).toBe("Wuthering Heights");
+    expect(await ui5.control<Table>(TABLE).getItems(0).getBindingContext()!.getProperty("title")).toBe(
+      "Wuthering Heights"
+    );
     expect(await ui5.control<Button>(GO_BUTTON).getText()).toBe("Go");
   });
 
@@ -45,7 +48,9 @@ test.describe("fluent chaining", () => {
 
   test("reports the failing step with what the previous steps returned", async ({ ui5 }) => {
     const error = await errorOf(ui5.control(TABLE).getItems(0).getNope());
-    expect(error?.message).toContain('ui5.control({"controlType":"sap.m.Table"}).getItems(0).getNope() failed at .getNope():');
+    expect(error?.message).toContain(
+      'ui5.control({"controlType":"sap.m.Table"}).getItems(0).getNope() failed at .getNope():'
+    );
     expect(error?.message).toContain("'getNope' is not a function on sap.m.ColumnListItem");
     expect(error?.message).toMatch(/✔ ui5\.control\(.*\) → sap\.m\.Table#/);
     expect(error?.message).toMatch(/✔ getItems\(0\) → sap\.m\.ColumnListItem#/);
@@ -66,7 +71,9 @@ test.describe("fluent chaining", () => {
 
   test("keeps the 'no control found' message", async ({ ui5 }) => {
     const error = await errorOf(ui5.control({ id: "nope" }, { timeout: 500 }).getText());
-    expect(error?.message).toMatch(/no control found for selector \{"id":"nope"\} within 500ms\n {2}in ui5\.control\(.*\)\.getText\(\)/);
+    expect(error?.message).toMatch(
+      /no control found for selector \{"id":"nope"\} within 500ms\n {2}in ui5\.control\(.*\)\.getText\(\)/
+    );
     expect(error?.stack).toContain("chain.spec.ts");
   });
 
@@ -109,7 +116,7 @@ test.describe("fluent chaining", () => {
         text: "Self-destruct",
         press(this: any) {
           this.destroy();
-        },
+        }
       }).placeAt(document.body);
     });
     const button = await ui5.control({ controlType: "sap.m.Button", properties: { text: "Self-destruct" } });

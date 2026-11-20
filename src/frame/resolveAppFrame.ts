@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any -- UI5 objects in the browser are untyped. */
 import type { Frame, Page } from "@playwright/test";
 import type { ResolvedUI5Options } from "../config";
 import { callBridge, ensureBridge } from "../bridge/inject";
@@ -35,7 +36,10 @@ async function launchpadAppFrame(page: Page, selector: string): Promise<Frame | 
   const iframes = page.locator(selector);
   const count = await iframes.count();
   for (let i = 0; i < count; i++) {
-    const handle = await iframes.nth(i).elementHandle().catch(() => null);
+    const handle = await iframes
+      .nth(i)
+      .elementHandle()
+      .catch(() => null);
     if (!handle || !(await handle.isVisible().catch(() => false))) continue;
     const frame = await handle.contentFrame();
     if (frame && !frame.isDetached()) return frame;
@@ -75,15 +79,16 @@ async function shellState(main: Frame): Promise<ShellState> {
       try {
         const service: any = await Promise.race([
           container.getServiceAsync("AppLifeCycle"),
-          new Promise((_, reject) => setTimeout(() => reject(new Error("timeout")), 2000)),
+          new Promise((_, reject) => setTimeout(() => reject(new Error("timeout")), 2000))
         ]);
-        const app = service && typeof service.getCurrentApplication === "function" ? service.getCurrentApplication() : undefined;
+        const app =
+          service && typeof service.getCurrentApplication === "function" ? service.getCurrentApplication() : undefined;
         return {
           known: true,
           hash,
           embedded: !!(app && app.componentInstance && !app.homePage),
           home: !app || !!app.homePage,
-          type: app ? String(app.applicationType) : undefined,
+          type: app ? String(app.applicationType) : undefined
         };
       } catch {
         return { known: false, hash };
@@ -113,7 +118,7 @@ export async function resolveAppFrame(page: Page, options: ResolvedUI5Options): 
 
   const deadline = Date.now() + timeout;
   let shellSettled = false;
-  let lastMain = { ui5: false, ushell: false };
+  let lastMain: { ui5: boolean; ushell: boolean };
   let lastShell: ShellState | undefined;
   for (;;) {
     const lp = await launchpadAppFrame(page, options.launchpadIframeSelector);
@@ -140,7 +145,10 @@ export async function resolveAppFrame(page: Page, options: ResolvedUI5Options): 
       }
     }
     if (Date.now() > deadline) {
-      const iframes = await page.locator(options.launchpadIframeSelector).count().catch(() => 0);
+      const iframes = await page
+        .locator(options.launchpadIframeSelector)
+        .count()
+        .catch(() => 0);
       const shellInfo = lastShell?.known
         ? `launchpad reports app type=${lastShell.type ?? "none"}, embedded=${lastShell.embedded}, home=${lastShell.home}`
         : "launchpad state unknown";

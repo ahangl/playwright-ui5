@@ -3,7 +3,7 @@ import type { Page } from "@playwright/test";
 import type Button from "sap/m/Button";
 
 const pages = {
-  onTheMainPage: { ListReport: { appId: "fixture.books", componentId: "BooksList", contextPath: "/Books" } },
+  onTheMainPage: { ListReport: { appId: "fixture.books", componentId: "BooksList", contextPath: "/Books" } }
 } as const;
 const GO_BUTTON = { controlType: "sap.m.Button", properties: { text: "Go" } };
 

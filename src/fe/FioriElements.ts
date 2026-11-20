@@ -103,7 +103,7 @@ export class FioriElements {
     return {
       Given: journey.root("given"),
       When: journey.root("when"),
-      Then: journey.root("then"),
+      Then: journey.root("then")
     } as unknown as FioriElementsJourney<P>;
   }
 }
@@ -130,7 +130,7 @@ class Journey {
           // Capture the caller's stack now (synchronously), so errors point at the test line.
           const site = new Error();
           return this.chain(kind, [{ p: prop }], site);
-        },
+        }
       }
     );
   }
@@ -146,11 +146,13 @@ class Journey {
         if (typeof prop !== "string") return undefined;
         return this.chain(kind, [...steps, { p: prop }], site);
       },
-      apply: (_t, _this, args: unknown[]) => this.chain(kind, [...steps, { a: args }], site),
+      apply: (_t, _this, args: unknown[]) => this.chain(kind, [...steps, { a: args }], site)
     });
   }
 
-  private async frameFor(pageName: string): Promise<{ frame: Frame; pages: Record<string, { type: string; definition?: unknown }> }> {
+  private async frameFor(
+    pageName: string
+  ): Promise<{ frame: Frame; pages: Record<string, { type: string; definition?: unknown }> }> {
     const isShell = this.types[pageName] === "Shell";
     const appFrame = await this.ui5.appFrame();
     const frame = isShell ? this.ui5.shellFrame() : appFrame;
@@ -168,25 +170,29 @@ class Journey {
   private async execute(kind: FioriElementsKind, steps: Step[], site: Error): Promise<void> {
     const pageName = (steps[0] as { p: string }).p;
     const title = `${KIND_LABEL[kind]} ${describeSteps(steps)}`;
-    await step(title, async () => {
-      const { frame, pages } = await this.frameFor(pageName);
-      const timeout = this.ui5.options.waitForUI5Timeout;
-      await ensureBridge(frame, timeout);
-      const configKey = JSON.stringify(pages) + "|" + this.timeout;
-      await callBridge(frame, "fe.init", [pages, { timeout: this.timeout, configKey }], timeout);
-      const wireSteps = steps.map((s) => ("a" in s ? { a: toBrowser(s.a) } : s));
-      const result = await callBridge<RunResult>(frame, "fe.run", [kind, wireSteps], timeout);
-      if (!result.ok) {
-        const recent = result.log
-          .slice(-5)
-          .map((l) => `  ${l.ok ? "✔" : "✘"} ${l.message}`)
-          .join("\n");
-        throw errorAt(
-          `${title} failed:\n${tidyOpaError(result.error ?? "unknown error")}${recent ? `\nOPA log (last entries):\n${recent}` : ""}` +
-            `\nRan in ${frame === this.ui5.shellFrame() ? "the top-level frame" : "an iframe"}: ${describeFrameUrl(frame.url())}`,
-          site
-        );
-      }
-    }, site);
+    await step(
+      title,
+      async () => {
+        const { frame, pages } = await this.frameFor(pageName);
+        const timeout = this.ui5.options.waitForUI5Timeout;
+        await ensureBridge(frame, timeout);
+        const configKey = JSON.stringify(pages) + "|" + this.timeout;
+        await callBridge(frame, "fe.init", [pages, { timeout: this.timeout, configKey }], timeout);
+        const wireSteps = steps.map((s) => ("a" in s ? { a: toBrowser(s.a) } : s));
+        const result = await callBridge<RunResult>(frame, "fe.run", [kind, wireSteps], timeout);
+        if (!result.ok) {
+          const recent = result.log
+            .slice(-5)
+            .map((l) => `  ${l.ok ? "✔" : "✘"} ${l.message}`)
+            .join("\n");
+          throw errorAt(
+            `${title} failed:\n${tidyOpaError(result.error ?? "unknown error")}${recent ? `\nOPA log (last entries):\n${recent}` : ""}` +
+              `\nRan in ${frame === this.ui5.shellFrame() ? "the top-level frame" : "an iframe"}: ${describeFrameUrl(frame.url())}`,
+            site
+          );
+        }
+      },
+      site
+    );
   }
 }

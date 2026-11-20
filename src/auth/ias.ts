@@ -31,7 +31,7 @@ const DEFAULTS = {
   usernameSelector: "#j_username",
   passwordSelector: "#j_password",
   submitSelector: "#logOnFormSubmit",
-  errorSelector: "#logOnFormErrorMessage, .sapUiErrorMessage, [role='alert'], .error-message",
+  errorSelector: "#logOnFormErrorMessage, .sapUiErrorMessage, [role='alert'], .error-message"
 };
 
 const PASSWORDLESS_COOKIE = "__HOST-skipPasswordlessAuthnDeviceConfig";
@@ -64,10 +64,13 @@ export function ias(options: IasOptions = {}): AuthProvider {
       // Wait for: login form, IdP selection, or already logged in (valid session).
       const first = await Promise.race([
         username.waitFor({ timeout: remaining() }).then(() => "form" as const),
-        idpLink?.first().waitFor({ timeout: remaining() }).then(() => "idp" as const) ?? new Promise<never>(() => {}),
+        idpLink
+          ?.first()
+          .waitFor({ timeout: remaining() })
+          .then(() => "idp" as const) ?? new Promise<never>(() => {}),
         page
           .waitForURL((u) => u.origin === appOrigin, { timeout: remaining() })
-          .then(async () => ((await username.isVisible()) ? ("form" as const) : ("app" as const))),
+          .then(async () => ((await username.isVisible()) ? ("form" as const) : ("app" as const)))
       ]).catch(() => "timeout" as const);
 
       if (first === "app" && (await loggedIn())) return;
@@ -105,7 +108,7 @@ export function ias(options: IasOptions = {}): AuthProvider {
             .filter({ hasText: /\S/ })
             .first()
             .waitFor({ state: "visible", timeout: remaining() })
-            .then(() => "error" as const),
+            .then(() => "error" as const)
         ]);
         if (outcome === "error") throw new Error("the identity provider reported an error");
         if (options.isLoggedIn) {
@@ -119,13 +122,17 @@ export function ias(options: IasOptions = {}): AuthProvider {
           .locator(sel.errorSelector)
           .allInnerTexts()
           .catch(() => [] as string[]);
-        const detail = errors.map((t) => t.trim()).filter(Boolean).join(" | ");
+        const detail = errors
+          .map((t) => t.trim())
+          .filter(Boolean)
+          .join(" | ");
         throw new Error(
           `playwright-ui5 (ias): login as '${ctx.credentials.username}' did not complete` +
             (detail ? `: ${detail}` : ` (still on ${page.url()})`) +
-            `\n${(e as Error).message}`
+            `\n${(e as Error).message}`,
+          { cause: e }
         );
       }
-    },
+    }
   };
 }

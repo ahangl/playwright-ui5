@@ -1,5 +1,5 @@
 import { isDeepStrictEqual } from "node:util";
-import { expect as baseExpect, type ExpectMatcherState, type MatcherReturnType } from "@playwright/test";
+import { expect as baseExpect, type Expect, type ExpectMatcherState, type MatcherReturnType } from "@playwright/test";
 import { chainInternals } from "./control/chain";
 import { UI5Control } from "./control/remote";
 import { withoutSteps } from "./util/step";
@@ -53,8 +53,8 @@ async function retry<T>(
 ): Promise<{ pass: boolean; last: Attempt<T>; timeout: number }> {
   const timeout = options?.timeout ?? state.timeout;
   const deadline = Date.now() + timeout;
-  let last: Attempt<T> = { ok: false, error: "not checked" };
-  let pass = false;
+  let last: Attempt<T>;
+  let pass: boolean;
   for (let i = 0; ; i++) {
     const remaining = deadline - Date.now();
     try {
@@ -95,25 +95,18 @@ function result<T>(
         utils.matcherHint(name, undefined, expected === undefined ? "" : undefined, { isNot: state.isNot }),
         "",
         `Control: ${describeReceived(received)}`,
-        ...(expected === undefined ? [] : [`${expectedLabel}: ${state.isNot ? "not " : ""}${utils.printExpected(expected)}`]),
+        ...(expected === undefined
+          ? []
+          : [`${expectedLabel}: ${state.isNot ? "not " : ""}${utils.printExpected(expected)}`]),
         `Received: ${last.ok ? utils.printReceived(last.value) : last.error}`,
         "",
-        `Timeout: ${timeout}ms`,
-      ].join("\n"),
+        `Timeout: ${timeout}ms`
+      ].join("\n")
   };
 }
 
-/**
- * Playwright's `expect`, extended with retrying assertions for UI5 controls. Like Playwright's
- * locator assertions they re-run the selector/chain until the expectation is met or the
- * `expect` timeout is reached.
- *
- * @example
- * await expect(ui5.control(GO_BUTTON)).toBeUI5Enabled();
- * await expect(ui5.control(TABLE).getItems(0)).toHaveUI5BindingPath("/Books(201)");
- * await expect(ui5.controls({ controlType: "sap.m.ColumnListItem" })).toHaveUI5Count(2);
- */
-export const expect = baseExpect.extend({
+/** The UI5 matchers that {@link expect} adds. */
+const ui5Matchers = {
   /** The control's property `name` equals `expected` (deep equality; a RegExp matches strings). */
   async toHaveUI5Property(
     this: ExpectMatcherState,
@@ -132,7 +125,12 @@ export const expect = baseExpect.extend({
   },
 
   /** The control's `text` property equals `expected` (or matches the RegExp). */
-  async toHaveUI5Text(this: ExpectMatcherState, received: ControlLike, expected: string | RegExp, options?: MatcherOptions) {
+  async toHaveUI5Text(
+    this: ExpectMatcherState,
+    received: ControlLike,
+    expected: string | RegExp,
+    options?: MatcherOptions
+  ) {
     const outcome = await retry(
       this,
       options,
@@ -159,7 +157,7 @@ export const expect = baseExpect.extend({
       this,
       options,
       async (t) =>
-        (await controlOf(received, t)).exec((c: any) => {
+        (await controlOf(received, t)).exec((c: { getDomRef?: () => Element | null; getVisible?: () => boolean }) => {
           const dom = typeof c.getDomRef === "function" ? c.getDomRef() : null;
           const visible = typeof c.getVisible === "function" ? c.getVisible() !== false : true;
           return !!(visible && dom && dom.getClientRects().length > 0);
@@ -205,5 +203,17 @@ export const expect = baseExpect.extend({
       (v) => v === expected
     );
     return result(this, "toHaveUI5Count", received, expected, outcome);
-  },
-});
+  }
+};
+
+/**
+ * Playwright's `expect`, extended with retrying assertions for UI5 controls. Like Playwright's
+ * locator assertions they re-run the selector/chain until the expectation is met or the
+ * `expect` timeout is reached.
+ *
+ * @example
+ * await expect(ui5.control(GO_BUTTON)).toBeUI5Enabled();
+ * await expect(ui5.control(TABLE).getItems(0)).toHaveUI5BindingPath("/Books(201)");
+ * await expect(ui5.controls({ controlType: "sap.m.ColumnListItem" })).toHaveUI5Count(2);
+ */
+export const expect: Expect<typeof ui5Matchers> = baseExpect.extend(ui5Matchers);

@@ -11,6 +11,6 @@ setup("log in to SAP Build Work Zone", async ({ page }) => {
   await login(page, {
     url: process.env.WORKZONE_URL!,
     provider: ias({ idpDomain: process.env.WORKZONE_IDP || undefined }),
-    storageStatePath: ".auth/workzone.json",
+    storageStatePath: ".auth/workzone.json"
   });
 });

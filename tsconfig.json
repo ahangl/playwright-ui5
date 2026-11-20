@@ -13,5 +13,5 @@
     "noEmit": true
   },
   "include": ["src", "test", "playwright.config.ts", "tsup.config.ts"],
-  "exclude": ["src/browser", "test/fixture-app"]
+  "exclude": ["src/browser", "test/fixture-app", "test/types"]
 }

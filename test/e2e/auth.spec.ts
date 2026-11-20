@@ -22,7 +22,7 @@ async function fakeLandscape(context: BrowserContext, options: { flow: Flow; idp
     status: 200,
     contentType: "text/html",
     headers,
-    body: `<!doctype html><html><body>${body}</body></html>`,
+    body: `<!doctype html><html><body>${body}</body></html>`
   });
   const redirect = (location: string, headers: Record<string, string> = {}) =>
     html(`<script>location.replace(${JSON.stringify(location)})</script>`, headers);
@@ -63,7 +63,9 @@ async function fakeLandscape(context: BrowserContext, options: { flow: Flow; idp
     if (password === null) {
       // identifier-first: second page asks for the password
       return route.fulfill(
-        form(`<input type="hidden" name="j_username" value="${username}"><input id="j_password" name="j_password" type="password">`)
+        form(
+          `<input type="hidden" name="j_username" value="${username}"><input id="j_password" name="j_password" type="password">`
+        )
       );
     }
     if (username === USER.username && password === USER.password) {

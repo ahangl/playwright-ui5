@@ -1,0 +1,8 @@
+dist/
+node_modules/
+package-lock.json
+test/fixture-app/webapp/localService/
+test-results/
+playwright-report/
+.auth/
+CHANGELOG.md

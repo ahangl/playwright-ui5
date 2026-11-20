@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any -- UI5 objects in the browser are untyped. */
 import type { Frame, Locator } from "@playwright/test";
 import { callBridge, type ControlDescriptor, type Serialized } from "../bridge/inject";
 import { enterTextTitle, step, formatArgs } from "../util/step";
@@ -56,7 +57,10 @@ type ChainMethod<F, T> = F extends (...args: infer A) => infer R
   : never;
 
 type Promisified<T, Exclude> = {
-  [K in keyof T as K extends keyof Exclude ? never : T[K] extends (...args: any[]) => any ? K : never]: ChainMethod<T[K], T>;
+  [K in keyof T as K extends keyof Exclude ? never : T[K] extends (...args: any[]) => any ? K : never]: ChainMethod<
+    T[K],
+    T
+  >;
 };
 
 /**
@@ -84,28 +88,32 @@ export interface ControlChainHelpers<T = unknown> {
   reload(): Promise<RemoteControl>;
 }
 
+/** No extra members (the identity of an intersection). */
+type NoMembers = Record<never, never>;
+
 /** Methods available on a chain whose (non-null) result is `N`. */
 type ChainMembers<N, Self> = 0 extends 1 & N
   ? DynamicMethods
   : [N] extends [never]
-    ? {}
+    ? NoMembers
     : [N] extends [Primitive]
-      ? {}
+      ? NoMembers
       : [N] extends [Self]
         ? ControlChainMembers<Self>
         : [N] extends [Promise<infer P>]
           ? ChainMembers<NonNullable<P>, Self>
           : [N] extends [ReadonlyArray<unknown>]
-            ? {}
+            ? NoMembers
             : [N] extends [UI5ElementLike]
               ? ControlChainMembers<N>
               : [N] extends [Date]
-                ? {}
+                ? NoMembers
                 : unknown extends N
                   ? DynamicMethods
-                  : Promisified<N, {}>;
+                  : Promisified<N, NoMembers>;
 
-type ControlChainMembers<T> = ControlChainHelpers<T> & (unknown extends T ? DynamicMethods : Promisified<T, ControlChainHelpers>);
+type ControlChainMembers<T> = ControlChainHelpers<T> &
+  (unknown extends T ? DynamicMethods : Promisified<T, ControlChainHelpers>);
 
 /**
  * The result of a remote method call. Await it to get the value, or keep calling methods of the
@@ -185,10 +193,9 @@ function withDynamicMethods<T extends { methods: readonly string[]; call(name: s
         return (...args: unknown[]) => t.call(prop, ...args);
       }
       return undefined;
-    },
+    }
   });
 }
-
 
 export class UI5Control {
   /** Global id of the control. */
@@ -273,7 +280,12 @@ export class UI5Control {
         await callBridge(this.ctx.frame, "waitForUI5", [this.ctx.timeout], this.ctx.timeout);
         await this.locator().click();
       } else {
-        await callBridge(this.ctx.frame, "interact", [this.id, "PRESS", undefined, false, this.ctx.timeout], this.ctx.timeout);
+        await callBridge(
+          this.ctx.frame,
+          "interact",
+          [this.id, "PRESS", undefined, false, this.ctx.timeout],
+          this.ctx.timeout
+        );
       }
       return refreshed(this);
     });
@@ -316,7 +328,12 @@ export class UI5Control {
   /** Re-reads id/className/DOM ref (e.g. after re-rendering) and returns a fresh instance. */
   reload(): Promise<RemoteControl> {
     return step(`${this.className}#${this.id}.reload()`, async () => {
-      const d = await callBridge<ControlDescriptor>(this.ctx.frame, "describeTarget", [{ id: this.id }], this.ctx.timeout);
+      const d = await callBridge<ControlDescriptor>(
+        this.ctx.frame,
+        "describeTarget",
+        [{ id: this.id }],
+        this.ctx.timeout
+      );
       return createRemoteControl(this.ctx, d);
     });
   }

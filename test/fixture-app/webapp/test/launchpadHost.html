@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
   <head>
     <meta charset="utf-8" />
@@ -10,9 +10,25 @@
       before UI5 has finished loading inside it.
     -->
     <style>
-      html, body { margin: 0; height: 100%; }
-      header { height: 40px; background: #354a5f; color: #fff; font: 14px sans-serif; display: flex; align-items: center; padding: 0 12px; }
-      iframe { border: 0; width: 100%; height: calc(100% - 40px); }
+      html,
+      body {
+        margin: 0;
+        height: 100%;
+      }
+      header {
+        height: 40px;
+        background: #354a5f;
+        color: #fff;
+        font: 14px sans-serif;
+        display: flex;
+        align-items: center;
+        padding: 0 12px;
+      }
+      iframe {
+        border: 0;
+        width: 100%;
+        height: calc(100% - 40px);
+      }
     </style>
     <script
       id="sap-ui-bootstrap"
@@ -28,9 +44,13 @@
         Container: {
           getServiceAsync: function (name) {
             if (name !== "AppLifeCycle") return Promise.reject(new Error("no service " + name));
-            return Promise.resolve({ getCurrentApplication: function () { return currentApp; } });
-          },
-        },
+            return Promise.resolve({
+              getCurrentApplication: function () {
+                return currentApp;
+              }
+            });
+          }
+        }
       };
 
       function openApp() {

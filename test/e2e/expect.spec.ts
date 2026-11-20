@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any -- UI5 controls inside exec() callbacks are untyped. */
 import { test, expect } from "@ahangl/playwright-ui5";
 
 const GO_BUTTON = { controlType: "sap.m.Button", properties: { text: "Go" } };
@@ -54,7 +55,8 @@ test.describe("retrying UI5 assertions", () => {
         () => undefined,
         (e: Error) => e
       );
-    if (error) error.message = error.message.replace(/\u001b\[\d+m/g, ""); // drop colors
+    // eslint-disable-next-line no-control-regex -- drops the ANSI color codes
+    if (error) error.message = error.message.replace(/\u001b\[\d+m/g, "");
     expect(error?.message).toContain("toHaveUI5Text");
     expect(error?.message).toContain('Control: ui5.control({"controlType":"sap.m.Button","properties":{"text":"Go"}})');
     expect(error?.message).toContain('Expected: "Stop"');

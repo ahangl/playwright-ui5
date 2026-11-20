@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any -- UI5 objects in the browser are untyped. */
 import { callBridge, type ControlDescriptor, type Serialized } from "../bridge/inject";
 import { enterTextTitle, errorAt, formatArgs, step, withoutSteps } from "../util/step";
 import type { UI5Selector } from "./selector";
@@ -154,19 +155,23 @@ function withTimeout(ctx: RemoteContext, timeout?: number): RemoteContext {
  */
 export function createChain(source: ChainSource, steps: Step[], site: Error): any {
   let cached: Promise<unknown> | undefined;
-  const settle = () => (cached ??= !steps.length && source.value ? valueOf(source, site) : execute(source, steps, site));
+  const settle = () =>
+    (cached ??= !steps.length && source.value ? valueOf(source, site) : execute(source, steps, site));
 
   const internals: ChainInternals = {
     description: source.label + describeSteps(steps),
     kind: "chain",
-    run: (options = {}) => execute(source, steps, site, options.timeout),
+    run: (options = {}) => execute(source, steps, site, options.timeout)
   };
 
   /** Resolves the chain and checks that it ends at a control (for helpers and actions). */
   const control = async (helper: string): Promise<UI5Control> => {
     const value = await settle();
     if (!(value instanceof UI5Control)) {
-      throw errorAt(`playwright-ui5: ${helper}() needs a control, but ${internals.description} returned ${String(value)}`, site);
+      throw errorAt(
+        `playwright-ui5: ${helper}() needs a control, but ${internals.description} returned ${String(value)}`,
+        site
+      );
     }
     return value;
   };
@@ -219,7 +224,7 @@ export function createChain(source: ChainSource, steps: Step[], site: Error): an
                 resolve: async (timeout) => {
                   const c = await acted;
                   return { ctx: withTimeout(contextOf(c), timeout), start: { ref: { id: c.id } } };
-                },
+                }
               },
               [],
               actionSite
@@ -227,7 +232,7 @@ export function createChain(source: ChainSource, steps: Step[], site: Error): an
           };
         }
         return (...args: unknown[]) => createChain(source, [...steps, { m: prop, a: args }], new Error());
-      },
+      }
     }
   );
 }
@@ -253,7 +258,7 @@ export function chainAfter(label: string, before: Promise<UI5Control>): any {
       resolve: async (timeout) => {
         const c = await before;
         return { ctx: withTimeout(contextOf(c), timeout), start: { ref: { id: c.id } } };
-      },
+      }
     },
     [],
     new Error()
@@ -277,7 +282,12 @@ export function createControlsQuery(
       async () => {
         try {
           const c = await ctx(options.timeout);
-          const ds = await callBridge<ControlDescriptor[]>(c.frame, "findControls", [toBrowser(selector), c.timeout], c.timeout);
+          const ds = await callBridge<ControlDescriptor[]>(
+            c.frame,
+            "findControls",
+            [toBrowser(selector), c.timeout],
+            c.timeout
+          );
           return ds.map((d) => createRemoteControl(c, d));
         } catch (e) {
           throw e instanceof Error ? errorAt(e.message, site) : e;
@@ -289,13 +299,13 @@ export function createControlsQuery(
   const internals: ChainInternals = {
     description,
     kind: "controls",
-    run,
+    run
   };
   return {
     [CHAIN]: internals,
     then: (onFulfilled?: any, onRejected?: any) => (cached ??= run()).then(onFulfilled, onRejected),
     catch: (onRejected?: any) => (cached ??= run()).catch(onRejected),
     finally: (onFinally?: any) => (cached ??= run()).finally(onFinally),
-    toString: () => `UI5Query(${internals.description})`,
+    toString: () => `UI5Query(${internals.description})`
   };
 }

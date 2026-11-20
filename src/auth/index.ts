@@ -51,7 +51,7 @@ export async function login(page: Page, options: LoginOptions): Promise<void> {
   await provider.login(page, {
     url: options.url,
     credentials: options.credentials ?? credentialsFromEnv(),
-    timeout: options.timeout ?? 60_000,
+    timeout: options.timeout ?? 60_000
   });
   if (options.storageStatePath) {
     await page.context().storageState({ path: options.storageStatePath });

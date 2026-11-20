@@ -4,7 +4,7 @@ import {
   type PlaywrightTestOptions,
   type PlaywrightWorkerArgs,
   type PlaywrightWorkerOptions,
-  type TestType,
+  type TestType
 } from "@playwright/test";
 import type { UI5Options } from "./config";
 import { FioriElements } from "./fe/FioriElements";
@@ -33,7 +33,7 @@ export const test: TestType<
       // Keep the browser's own fetch (before UI5's fetch waiter wraps it), so that ignored
       // requests can bypass the waiter. Runs in every frame before any page script.
       await page.addInitScript(() => {
-        const w = window as any;
+        const w = window as Window & { __pwui5NativeFetch?: typeof fetch };
         if (!w.__pwui5NativeFetch && typeof w.fetch === "function") w.__pwui5NativeFetch = w.fetch;
       });
     }
@@ -41,7 +41,7 @@ export const test: TestType<
   },
   fe: async ({ ui5 }, use) => {
     await use(new FioriElements(ui5));
-  },
+  }
 });
 
 export { expect } from "./expect";

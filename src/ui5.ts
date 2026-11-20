@@ -11,7 +11,7 @@ import {
   type ControlsQuery,
   type Remote,
   type RemoteContext,
-  type RemoteControl,
+  type RemoteControl
 } from "./control/remote";
 import { createChain, createControlsQuery, describeSelector } from "./control/chain";
 import type { UI5Selector } from "./control/selector";
@@ -89,7 +89,12 @@ export class UI5 {
    * await ui5.shell.control({ id: "userActionsMenuHeaderButton" }).press();
    */
   get shell(): UI5 {
-    return (this.shellUI5 ??= new UI5(this.page, { ...this.options, appFrame: "main" }, this.baseURL, `${this.label}.shell`));
+    return (this.shellUI5 ??= new UI5(
+      this.page,
+      { ...this.options, appFrame: "main" },
+      this.baseURL,
+      `${this.label}.shell`
+    ));
   }
 
   /** Forget the resolved app frame, e.g. after navigating to another app. */
@@ -132,7 +137,12 @@ export class UI5 {
       const { route, params, componentId, replace, componentTargetInfo } = target;
       await step(`${this.label}: go to route ${route}${params ? " " + JSON.stringify(params) : ""}`, async () => {
         const { frame, timeout } = await this.ctx(options.timeout);
-        await callBridge(frame, "navTo", [route, params, componentId, !!replace, componentTargetInfo, timeout], timeout);
+        await callBridge(
+          frame,
+          "navTo",
+          [route, params, componentId, !!replace, componentTargetInfo, timeout],
+          timeout
+        );
         await withoutSteps(() => this.waitForUI5(options));
       });
       return;
@@ -159,6 +169,7 @@ export class UI5 {
     return step(`${this.label}.exec(${formatArgs([fn, ...args])})`, async () => {
       const ctx = await this.ctx();
       await callBridge(ctx.frame, "waitForUI5", [ctx.timeout], ctx.timeout);
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any -- execExpression takes any function
       const result = await ctx.frame.evaluate(execExpression(fn as (...a: any[]) => unknown, args));
       return fromBrowser(result as Serialized, ctx) as Remote<Awaited<R>>;
     });
@@ -185,7 +196,7 @@ export class UI5 {
     return createChain(
       {
         resolve: async (timeout) => ({ ctx: await this.ctx(timeout ?? options.timeout), start: { selector } }),
-        label: `${this.label}.control(${describeSelector(selector)})`,
+        label: `${this.label}.control(${describeSelector(selector)})`
       },
       [],
       new Error()
@@ -193,7 +204,10 @@ export class UI5 {
   }
 
   /** Like {@link control} but returns `null` instead of throwing when nothing matches. */
-  controlOrNull<T = unknown>(selector: UI5Selector, options: { timeout?: number } = {}): Promise<RemoteControl<T> | null> {
+  controlOrNull<T = unknown>(
+    selector: UI5Selector,
+    options: { timeout?: number } = {}
+  ): Promise<RemoteControl<T> | null> {
     return step(`${this.label}.controlOrNull(${describeSelector(selector)})`, async () => {
       const ctx = await this.ctx(options.timeout);
       const d = await callBridge<ControlDescriptor | null>(

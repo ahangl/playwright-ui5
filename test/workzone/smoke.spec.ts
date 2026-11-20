@@ -22,14 +22,18 @@ test("opens an app via intent and runs FE assertions inside the app frame", asyn
 
   await ui5.goTo(intent!);
   const frame = await ui5.appFrame();
-  test.info().annotations.push({ type: "app frame", description: frame === ui5.shellFrame() ? "main frame" : frame.url() });
+  test
+    .info()
+    .annotations.push({ type: "app frame", description: frame === ui5.shellFrame() ? "main frame" : frame.url() });
 
   const appId = process.env.WORKZONE_APP_ID;
   const componentId = process.env.WORKZONE_LR_COMPONENT;
   test.skip(!appId || !componentId, "WORKZONE_APP_ID / WORKZONE_LR_COMPONENT not set");
 
   const { Then } = fe.init({
-    onTheMainPage: { ListReport: { appId: appId!, componentId: componentId!, contextPath: process.env.WORKZONE_CONTEXT_PATH } },
+    onTheMainPage: {
+      ListReport: { appId: appId!, componentId: componentId!, contextPath: process.env.WORKZONE_CONTEXT_PATH }
+    }
   });
   // Only checks every FE V4 List Report satisfies. (No iExecuteSearch(): apps in live mode have no Go button.)
   await Then.onTheMainPage.iSeeThisPage();

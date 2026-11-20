@@ -36,7 +36,7 @@ export type ResolvedUI5Options = Required<UI5Options>;
 export const DEFAULT_LAUNCHPAD_IFRAME_SELECTOR = [
   'iframe[data-sap-ushell-active="true"]',
   "iframe.sapUShellApplicationContainer",
-  'iframe[id^="application-"]',
+  'iframe[id^="application-"]'
 ].join(", ");
 
 export function resolveOptions(options: UI5Options = {}): ResolvedUI5Options {
@@ -45,6 +45,6 @@ export function resolveOptions(options: UI5Options = {}): ResolvedUI5Options {
     appFrame: options.appFrame ?? "auto",
     feTimeout: options.feTimeout ?? 30_000,
     launchpadIframeSelector: options.launchpadIframeSelector ?? DEFAULT_LAUNCHPAD_IFRAME_SELECTOR,
-    ignoreAutoWaitUrls: options.ignoreAutoWaitUrls ?? [],
+    ignoreAutoWaitUrls: options.ignoreAutoWaitUrls ?? []
   };
 }
