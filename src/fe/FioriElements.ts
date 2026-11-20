@@ -2,8 +2,8 @@ import type { Frame } from "@playwright/test";
 import { callBridge, ensureBridge } from "../bridge/inject";
 import { toBrowser } from "../control/remote";
 import type { UI5 } from "../ui5";
-import { callerLocation, formatArgs, step } from "../util/step";
-import type { FEJourney, FEKind, FEPages } from "./types";
+import { errorAt, formatArgs, step } from "../util/step";
+import type { FioriElementsJourney, FioriElementsKind, FioriElementsPages } from "./types";
 
 type Step = { p: string } | { a: unknown[] };
 
@@ -13,9 +13,9 @@ interface RunResult {
   log: Array<{ ok: boolean; message: string }>;
 }
 
-const KIND_LABEL: Record<FEKind, string> = { given: "Given", when: "When", then: "Then" };
+const KIND_LABEL: Record<FioriElementsKind, string> = { given: "Given", when: "When", then: "Then" };
 
-function pageType(config: FEPages[string]): string {
+function pageType(config: FioriElementsPages[string]): string {
   const keys = Object.keys(config);
   if (keys.length !== 1 || !["ListReport", "ObjectPage", "Shell"].includes(keys[0])) {
     throw new Error(
@@ -88,7 +88,7 @@ function describeSteps(steps: Step[]): string {
  * await When.onTheMainPage.onFilterBar().iChangeSearchField("Poe").and.iExecuteSearch();
  * await Then.onTheMainPage.onTable().iCheckRows(2);
  */
-export class FE {
+export class FioriElements {
   constructor(private readonly ui5: UI5) {}
 
   /**
@@ -96,7 +96,7 @@ export class FE {
    * browser until a statement is awaited; page objects are (re-)created lazily in whichever frame
    * the statement runs in (Shell pages run in the launchpad frame, all others in the app frame).
    */
-  init<const P extends FEPages>(pages: P, options: { timeout?: number } = {}): FEJourney<P> {
+  init<const P extends FioriElementsPages>(pages: P, options: { timeout?: number } = {}): FioriElementsJourney<P> {
     const types: Record<string, string> = {};
     for (const [name, config] of Object.entries(pages)) types[name] = pageType(config);
     const journey = new Journey(this.ui5, pages, types, options.timeout ?? this.ui5.options.feTimeout);
@@ -104,19 +104,19 @@ export class FE {
       Given: journey.root("given"),
       When: journey.root("when"),
       Then: journey.root("then"),
-    } as unknown as FEJourney<P>;
+    } as unknown as FioriElementsJourney<P>;
   }
 }
 
 class Journey {
   constructor(
     private readonly ui5: UI5,
-    private readonly pages: FEPages,
+    private readonly pages: FioriElementsPages,
     private readonly types: Record<string, string>,
     private readonly timeout: number
   ) {}
 
-  root(kind: FEKind): object {
+  root(kind: FioriElementsKind): object {
     return new Proxy(
       {},
       {
@@ -135,7 +135,7 @@ class Journey {
     );
   }
 
-  private chain(kind: FEKind, steps: Step[], site: Error): unknown {
+  private chain(kind: FioriElementsKind, steps: Step[], site: Error): unknown {
     const fn = function () {};
     return new Proxy(fn, {
       get: (_t, prop) => {
@@ -165,7 +165,7 @@ class Journey {
     return { frame, pages };
   }
 
-  private async execute(kind: FEKind, steps: Step[], site: Error): Promise<void> {
+  private async execute(kind: FioriElementsKind, steps: Step[], site: Error): Promise<void> {
     const pageName = (steps[0] as { p: string }).p;
     const title = `${KIND_LABEL[kind]} ${describeSteps(steps)}`;
     await step(title, async () => {
@@ -181,13 +181,11 @@ class Journey {
           .slice(-5)
           .map((l) => `  ${l.ok ? "✔" : "✘"} ${l.message}`)
           .join("\n");
-        const error = new Error(
+        throw errorAt(
           `${title} failed:\n${tidyOpaError(result.error ?? "unknown error")}${recent ? `\nOPA log (last entries):\n${recent}` : ""}` +
-            `\nRan in ${frame === this.ui5.shellFrame() ? "the top-level frame" : "an iframe"}: ${describeFrameUrl(frame.url())}`
+            `\nRan in ${frame === this.ui5.shellFrame() ? "the top-level frame" : "an iframe"}: ${describeFrameUrl(frame.url())}`,
+          site
         );
-        const loc = callerLocation(site);
-        error.stack = `${error.name}: ${error.message}` + (loc ? `\n    at ${loc.file}:${loc.line}:${loc.column}` : "");
-        throw error;
       }
     }, site);
   }

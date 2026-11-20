@@ -7,21 +7,26 @@ import {
   execExpression,
   fromBrowser,
   toBrowser,
+  type ControlChain,
+  type ControlsQuery,
   type Remote,
   type RemoteContext,
   type RemoteControl,
 } from "./control/remote";
+import { createChain, createControlsQuery, describeSelector } from "./control/chain";
 import type { UI5Selector } from "./control/selector";
 import { cleanStack, step } from "./util/step";
 
-function describeSelector(selector: UI5Selector): string {
-  try {
-    return JSON.stringify(toBrowser(selector), (_k, v) =>
-      v && typeof v === "object" && "__pwui5re" in v ? `/${v.__pwui5re.source}/${v.__pwui5re.flags}` : v
-    );
-  } catch {
-    return String(selector);
-  }
+/** Router navigation target for {@link UI5.goTo}, like wdi5's `goTo({ oRoute })`. */
+export interface UI5Route {
+  /** Route name from the manifest (`sap.ui5/routing/routes`). */
+  route: string;
+  /** Route parameters, e.g. `{ key: "251" }` for the pattern `Books({key})`. */
+  params?: Record<string, unknown>;
+  /** Id of the component whose router is used. Default: the only application component with a router. */
+  componentId?: string;
+  /** Replace the current history entry instead of adding one. */
+  replace?: boolean;
 }
 
 /**
@@ -89,9 +94,19 @@ export class UI5 {
    * Navigates and waits for UI5.
    * - `"#SalesOrder-manage"` / `"#/Books(1)"`: changes the hash of the current page (or of
    *   `baseURL` if nothing is loaded yet) - for Work Zone/launchpads this is intent navigation.
+   * - `{ route, params }`: navigates with the app's router (`getRouter().navTo`), without reloading.
    * - anything else is passed to `page.goto` (relative URLs use `baseURL`).
    */
-  async goTo(target: string, options: { timeout?: number } = {}): Promise<void> {
+  async goTo(target: string | UI5Route, options: { timeout?: number } = {}): Promise<void> {
+    if (typeof target !== "string") {
+      const { route, params, componentId, replace } = target;
+      await step(`ui5: go to route ${route}${params ? " " + JSON.stringify(params) : ""}`, async () => {
+        const { frame, timeout } = await this.ctx(options.timeout);
+        await callBridge(frame, "navTo", [route, params, componentId, !!replace, timeout], timeout);
+        await this.waitForUI5(options);
+      });
+      return;
+    }
     await step(`ui5: go to ${target}`, async () => {
       let url = target;
       if (target.startsWith("#")) {
@@ -125,23 +140,25 @@ export class UI5 {
    * wdi5's `browser.asControl()`. A `timeout` given here also applies to later operations on the
    * returned control (method calls, press, enterText).
    *
+   * The result is a lazy chain: await it to get the control, or call methods on it directly - the
+   * whole chain runs in one browser round trip when awaited.
+   *
    * @example
    * const btn = await ui5.control<Button>({ controlType: "sap.m.Button", properties: { text: "Go" } });
    * await btn.press();
    * expect(await btn.getEnabled()).toBe(true);
+   * expect(await ui5.control<Table>({ controlType: "sap.m.Table" }).getItems(0).getBindingContextPath()).toBe("/Books(1)");
    */
-  async control<T = unknown>(selector: UI5Selector, options: { timeout?: number } = {}): Promise<RemoteControl<T>> {
-    const ctx = await this.ctx(options.timeout);
-    const d = await callBridge<ControlDescriptor | null>(
-      ctx.frame,
-      "findControl",
-      [toBrowser(selector), ctx.timeout],
-      ctx.timeout
+  control<T = unknown>(selector: UI5Selector, options: { timeout?: number } = {}): ControlChain<T> {
+    return createChain(
+      {
+        ctx: (timeout) => this.ctx(timeout ?? options.timeout),
+        start: { selector },
+        label: `ui5.control(${describeSelector(selector)})`,
+      },
+      [],
+      new Error()
     );
-    if (!d) {
-      throw cleanStack(new Error(`playwright-ui5: no control found for selector ${describeSelector(selector)} within ${ctx.timeout}ms`));
-    }
-    return createRemoteControl<T>(ctx, d);
   }
 
   /** Like {@link control} but returns `null` instead of throwing when nothing matches. */
@@ -156,11 +173,12 @@ export class UI5 {
     return d ? createRemoteControl<T>(ctx, d) : null;
   }
 
-  /** All controls currently matching the selector (after UI5 is idle; does not wait for matches). */
-  async controls<T = unknown>(selector: UI5Selector, options: { timeout?: number } = {}): Promise<RemoteControl<T>[]> {
-    const ctx = await this.ctx(options.timeout);
-    const ds = await callBridge<ControlDescriptor[]>(ctx.frame, "findControls", [toBrowser(selector), ctx.timeout], ctx.timeout);
-    return ds.map((d) => createRemoteControl<T>(ctx, d));
+  /**
+   * All controls currently matching the selector (after UI5 is idle; does not wait for matches).
+   * Use `await expect(ui5.controls(selector)).toHaveUI5Count(n)` to wait for a number of matches.
+   */
+  controls<T = unknown>(selector: UI5Selector, options: { timeout?: number } = {}): ControlsQuery<T> {
+    return createControlsQuery((timeout) => this.ctx(timeout ?? options.timeout), selector, new Error());
   }
 
   /** Playwright locator of the root DOM element of the control matching the selector. */

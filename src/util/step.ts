@@ -88,3 +88,16 @@ export function formatArgs(args: unknown[]): string {
     })
     .join(", ");
 }
+
+/**
+ * Creates an error whose stack consists only of the user's source line found in `site` (an Error
+ * created synchronously where the user called the library). Used for operations that are recorded
+ * first and executed later (Fiori elements statements, control chains): their async stacks would
+ * otherwise only show library frames.
+ */
+export function errorAt(message: string, site: Error): Error {
+  const error = new Error(message);
+  const loc = callerLocation(site);
+  error.stack = `${error.name}: ${error.message}` + (loc ? `\n    at ${loc.file}:${loc.line}:${loc.column}` : "");
+  return error;
+}

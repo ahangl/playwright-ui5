@@ -37,5 +37,11 @@ export interface UI5Selector {
   interactable?: boolean;
   /** Only search inside open dialogs/popovers. */
   searchOpenDialogs?: boolean;
+  /**
+   * Which DOM element of the control `locator()` and `press({ native: true })` use (as in wdi5 /
+   * RecordReplay): `"root"` (default), `"focus"` (e.g. the inner `<input>`), `"press"`, `"auto"`,
+   * or `{ idSuffix }` for the element with id `<control id>-<idSuffix>`.
+   */
+  interaction?: "root" | "focus" | "press" | "auto" | { idSuffix: string };
   [key: string]: unknown;
 }

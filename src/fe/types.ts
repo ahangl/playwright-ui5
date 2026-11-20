@@ -9,7 +9,7 @@ import type ObjectPage from "sap/fe/test/ObjectPage";
 import type Shell from "sap/fe/test/Shell";
 
 /** Constructor settings of `sap.fe.test.ListReport` / `sap.fe.test.ObjectPage`. */
-export interface FEPageDefinition {
+export interface FioriElementsPageDefinition {
   /** `sap.app.id` from the manifest. */
   appId: string;
   /** Id of the routing target in the manifest, e.g. `"BooksList"` / `"BooksObjectPage"`. */
@@ -19,16 +19,16 @@ export interface FEPageDefinition {
 }
 
 /** One page object, keyed by the sap.fe.test page class. */
-export type FEPageConfig =
-  | { ListReport: FEPageDefinition }
-  | { ObjectPage: FEPageDefinition }
+export type FioriElementsPageConfig =
+  | { ListReport: FioriElementsPageDefinition }
+  | { ObjectPage: FioriElementsPageDefinition }
   | { Shell: Record<string, never> };
 
 /**
  * Page objects by name, e.g.
  * `{ onTheMainPage: { ListReport: {...} }, onTheDetailPage: { ObjectPage: {...} }, onTheShell: { Shell: {} } }`.
  */
-export type FEPages = Record<string, FEPageConfig>;
+export type FioriElementsPages = Record<string, FioriElementsPageConfig>;
 
 type ListReportActions = typeof ListReport.actions;
 type ListReportAssertions = typeof ListReport.assertions;
@@ -55,10 +55,10 @@ type AssertionsOf<C> = C extends { ListReport: unknown }
 type Next<T, R> = 0 extends 1 & R ? T : [R] extends [object] ? ([object] extends [R] ? T : R) : T;
 
 /**
- * A recorded statement chain. Every method call returns a {@link FEStep} that can be continued
+ * A recorded statement chain. Every method call returns a {@link FioriElementsStep} that can be continued
  * (directly or via `.and`) and must finally be awaited to execute it in the browser.
  */
-export type FEChain<T> = 0 extends 1 & T
+export type FioriElementsChain<T> = 0 extends 1 & T
   ? any
   : {
       [K in keyof T as T[K] extends (...args: any[]) => any ? K : never]-?: ChainMethod<T[K], T>;
@@ -71,28 +71,28 @@ type ChainMethod<F, T> = F extends {
   (...args: infer A3): infer R3;
   (...args: infer A4): infer R4;
 }
-  ? ((...args: A1) => FEStep<Next<T, R1>>) &
-      ((...args: A2) => FEStep<Next<T, R2>>) &
-      ((...args: A3) => FEStep<Next<T, R3>>) &
-      ((...args: A4) => FEStep<Next<T, R4>>)
+  ? ((...args: A1) => FioriElementsStep<Next<T, R1>>) &
+      ((...args: A2) => FioriElementsStep<Next<T, R2>>) &
+      ((...args: A3) => FioriElementsStep<Next<T, R3>>) &
+      ((...args: A4) => FioriElementsStep<Next<T, R4>>)
   : F extends (...args: infer A) => infer R
-    ? (...args: A) => FEStep<Next<T, R>>
+    ? (...args: A) => FioriElementsStep<Next<T, R>>
     : never;
 
-export type FEStep<T> = FEChain<T> & { readonly and: FEChain<T> } & PromiseLike<void>;
+export type FioriElementsStep<T> = FioriElementsChain<T> & { readonly and: FioriElementsChain<T> } & PromiseLike<void>;
 
-export type FEKind = "given" | "when" | "then";
+export type FioriElementsKind = "given" | "when" | "then";
 
 /** Root object of `Given`/`When`/`Then`: one property per configured page. */
-export type FERoot<P extends FEPages, K extends FEKind> = {
-  readonly [Name in keyof P]: FEChain<K extends "then" ? AssertionsOf<P[Name]> : ActionsOf<P[Name]>>;
+export type FioriElementsRoot<P extends FioriElementsPages, K extends FioriElementsKind> = {
+  readonly [Name in keyof P]: FioriElementsChain<K extends "then" ? AssertionsOf<P[Name]> : ActionsOf<P[Name]>>;
 };
 
-export interface FEJourney<P extends FEPages> {
+export interface FioriElementsJourney<P extends FioriElementsPages> {
   /** Arrangements (OPA `Given`). Page actions can be used here too. */
-  readonly Given: FERoot<P, "given">;
+  readonly Given: FioriElementsRoot<P, "given">;
   /** Actions (OPA `When`). */
-  readonly When: FERoot<P, "when">;
+  readonly When: FioriElementsRoot<P, "when">;
   /** Assertions (OPA `Then`). */
-  readonly Then: FERoot<P, "then">;
+  readonly Then: FioriElementsRoot<P, "then">;
 }

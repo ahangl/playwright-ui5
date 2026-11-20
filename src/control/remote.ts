@@ -1,6 +1,7 @@
 import type { Frame, Locator } from "@playwright/test";
 import { callBridge, type ControlDescriptor, type Serialized } from "../bridge/inject";
 import { step, formatArgs } from "../util/step";
+import { chainFrom } from "./chain";
 
 const REF = Symbol.for("playwright-ui5.ref");
 
@@ -34,15 +35,86 @@ export type Remote<R, Self = never> = [R] extends [Primitive]
             ? Date
             : RemoteObject<R>;
 
+/**
+ * A remote method: returns a {@link UI5Chain}. Getters of aggregations (no parameters, returning
+ * an array of controls) also accept an index, like in wdi5: `table.getItems(0)`.
+ */
+type ChainMethod<F, T> = F extends (...args: infer A) => infer R
+  ? A extends []
+    ? [NonNullable<R>] extends [ReadonlyArray<infer E>]
+      ? [E] extends [UI5ElementLike]
+        ? ((...args: A) => UI5Chain<R, T>) & ((index: number) => UI5Chain<E>)
+        : (...args: A) => UI5Chain<R, T>
+      : (...args: A) => UI5Chain<R, T>
+    : (...args: A) => UI5Chain<R, T>
+  : never;
+
 type Promisified<T, Exclude> = {
-  [K in keyof T as K extends keyof Exclude ? never : T[K] extends (...args: any[]) => any ? K : never]: T[K] extends (
-    ...args: infer A
-  ) => infer R
-    ? (...args: A) => Promise<Remote<R, T>>
-    : never;
+  [K in keyof T as K extends keyof Exclude ? never : T[K] extends (...args: any[]) => any ? K : never]: ChainMethod<T[K], T>;
 };
 
-type DynamicMethods = { [method: string]: any };
+/**
+ * Methods of an untyped control/object: any method can be called and returns an untyped chain.
+ * (Not `any`, so that the UI5 `expect` matchers stay available on the result.)
+ */
+type DynamicMethods = { [method: string]: (...args: any[]) => UntypedChain };
+
+/** Result of a method call on an untyped control/object: awaits to `any`, can be chained further. */
+export type UntypedChain = Promise<any> & ControlChainHelpers & DynamicMethods;
+
+/** Helpers of {@link UI5Control} that can be called directly on a control chain. */
+export interface ControlChainHelpers {
+  /** See {@link UI5Control.press}. */
+  press(options?: { native?: boolean }): Promise<void>;
+  /** See {@link UI5Control.enterText}. */
+  enterText(text: string, options?: { clearTextFirst?: boolean }): Promise<void>;
+  /** See {@link UI5Control.exec}. */
+  exec<R, A extends unknown[]>(fn: (control: any, ...args: A) => R, ...args: A): Promise<Remote<Awaited<R>>>;
+  /** Playwright locator of the control (resolves the chain first). */
+  locator(): Promise<Locator>;
+  /** See {@link UI5Control.getBindingContextPath}. */
+  getBindingContextPath(modelName?: string): Promise<string | undefined>;
+  /** See {@link UI5Control.reload}. */
+  reload(): Promise<RemoteControl>;
+}
+
+/** Methods available on a chain whose (non-null) result is `N`. */
+type ChainMembers<N, Self> = 0 extends 1 & N
+  ? DynamicMethods
+  : [N] extends [never]
+    ? {}
+    : [N] extends [Primitive]
+      ? {}
+      : [N] extends [Self]
+        ? ControlChainMembers<Self>
+        : [N] extends [Promise<infer P>]
+          ? ChainMembers<NonNullable<P>, Self>
+          : [N] extends [ReadonlyArray<unknown>]
+            ? {}
+            : [N] extends [UI5ElementLike]
+              ? ControlChainMembers<N>
+              : [N] extends [Date]
+                ? {}
+                : unknown extends N
+                  ? DynamicMethods
+                  : Promisified<N, {}>;
+
+type ControlChainMembers<T> = ControlChainHelpers & (unknown extends T ? DynamicMethods : Promisified<T, ControlChainHelpers>);
+
+/**
+ * The result of a remote method call. Await it to get the value, or keep calling methods of the
+ * result - the whole chain runs in one browser round trip when awaited:
+ * `await ui5.control<Table>(sel).getItems(0).getBindingContextPath()`.
+ *
+ * Chains are lazy: nothing happens until they are awaited.
+ */
+export type UI5Chain<R, Self = never> = Promise<Remote<R, Self>> & ChainMembers<NonNullable<R>, Self>;
+
+/** Result of `ui5.control<T>()`: the control (when awaited) or a chain of its methods. */
+export type ControlChain<T = unknown> = Promise<RemoteControl<T>> & ControlChainMembers<T>;
+
+/** Result of `ui5.controls<T>()`: all matching controls when awaited. */
+export type ControlsQuery<T = unknown> = Promise<RemoteControl<T>[]>;
 
 /**
  * A UI5 control living in the browser. Besides the helpers of {@link UI5Control}, every public
@@ -89,7 +161,7 @@ export function fromBrowser(value: Serialized, ctx: RemoteContext): unknown {
   }
 }
 
-function withDynamicMethods<T extends { methods: readonly string[]; call(name: string, ...args: unknown[]): Promise<unknown> }>(
+function withDynamicMethods<T extends { methods: readonly string[]; call(name: string, ...args: unknown[]): unknown }>(
   target: T
 ): T {
   return new Proxy(target, {
@@ -103,15 +175,6 @@ function withDynamicMethods<T extends { methods: readonly string[]; call(name: s
   });
 }
 
-async function invoke(ctx: RemoteContext, ref: Ref, method: string, args: unknown[]): Promise<unknown> {
-  const result = await callBridge<Serialized>(
-    ctx.frame,
-    "call",
-    [ref, method, toBrowser(args), ctx.timeout],
-    ctx.timeout
-  );
-  return fromBrowser(result, ctx);
-}
 
 export class UI5Control {
   /** Global id of the control. */
@@ -148,9 +211,9 @@ export class UI5Control {
     return this.ctx.frame.locator(`[id="${id}"]`);
   }
 
-  /** Calls any method of the control in the browser. */
+  /** Calls any method of the control in the browser. Returns a chain (see {@link UI5Chain}). */
   call<R = unknown>(method: string, ...args: unknown[]): Promise<R> {
-    return invoke(this.ctx, { id: this.id }, method, args) as Promise<R>;
+    return chainFrom(this.ctx, { id: this.id }, `${this.className}#${this.id}`, method, args);
   }
 
   getProperty<R = unknown>(name: string): Promise<R> {
@@ -253,8 +316,9 @@ export class UI5Object {
     Object.defineProperty(this, REF, { value: { h: handle }, enumerable: false });
   }
 
+  /** Calls any method of the object in the browser. Returns a chain (see {@link UI5Chain}). */
   call<R = unknown>(method: string, ...args: unknown[]): Promise<R> {
-    return invoke(this.ctx, { h: this.handle }, method, args) as Promise<R>;
+    return chainFrom(this.ctx, { h: this.handle }, this.className, method, args);
   }
 
   /** Frees the browser-side reference. */

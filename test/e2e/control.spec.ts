@@ -37,7 +37,7 @@ test.describe("control API (standalone app)", () => {
     expect(await ui5.controls(ROW)).toHaveLength(5);
     await ui5.enterText(AUTHOR_FILTER, "Edgar Allan Poe");
     await ui5.press(GO_BUTTON);
-    await expect.poll(async () => (await ui5.controls(ROW)).length).toBe(2);
+    await expect(ui5.controls(ROW)).toHaveUI5Count(2);
   });
 
   test("returns aggregations as remote controls and objects as handles", async ({ ui5 }) => {
@@ -83,6 +83,23 @@ test.describe("control API (standalone app)", () => {
     await go.press();
   });
 
+  test("interaction selects the inner DOM element for the locator", async ({ ui5 }) => {
+    const root = await ui5.locator(AUTHOR_FILTER);
+    expect(await root.evaluate((el) => el.tagName)).not.toBe("INPUT");
+    const input = await ui5.locator({ ...AUTHOR_FILTER, interaction: "focus" });
+    expect(await input.evaluate((el) => el.tagName)).toBe("INPUT");
+    await input.fill("Edgar Allan Poe");
+    expect(await ui5.control(AUTHOR_FILTER).getConditions()).toHaveLength(0); // not yet submitted
+  });
+
+  test("navigates with the app's router", async ({ ui5, page }) => {
+    await ui5.goTo({ route: "BooksObjectPage", params: { key: "251" } });
+    expect(page.url()).toContain("#/Books(251)");
+    await expect(ui5.control({ controlType: "sap.uxap.ObjectPageLayout" })).toBeUI5Visible();
+
+    await expect(ui5.goTo({ route: "Nope" })).rejects.toThrow(/route 'Nope' does not exist .*routes: BooksList, BooksObjectPage/);
+  });
+
   test("fails with a helpful message when nothing matches", async ({ ui5 }) => {
     await expect(ui5.control({ controlType: "sap.m.Button", properties: { text: "Nope" } }, { timeout: 1500 })).rejects.toThrow(
       /no control found for selector .*Nope/
@@ -100,7 +117,7 @@ test.describe("control API (app inside an iframe, like SAP Build Work Zone)", ()
 
     await ui5.enterText(AUTHOR_FILTER, "Charlotte Brontë");
     await ui5.press(GO_BUTTON);
-    await expect.poll(async () => (await ui5.controls(ROW)).length).toBe(1);
+    await expect(ui5.controls(ROW)).toHaveUI5Count(1);
     await expect(await ui5.locator(GO_BUTTON)).toBeVisible();
   });
 

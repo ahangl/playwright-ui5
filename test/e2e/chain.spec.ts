@@ -1,0 +1,80 @@
+import { test, expect, type RemoteControl } from "@ahangl/playwright-ui5";
+import type Table from "sap/m/Table";
+import type Button from "sap/m/Button";
+
+const TABLE = { controlType: "sap.m.Table" };
+const GO_BUTTON = { controlType: "sap.m.Button", properties: { text: "Go" } };
+
+async function errorOf(p: PromiseLike<unknown>): Promise<Error | undefined> {
+  return Promise.resolve(p).then(
+    () => undefined,
+    (e: Error) => e
+  );
+}
+
+test.describe("fluent chaining", () => {
+  test.beforeEach(async ({ ui5 }) => {
+    await ui5.goTo("/index.html");
+  });
+
+  test("runs a typed chain with a single await", async ({ ui5 }) => {
+    expect(await ui5.control<Table>(TABLE).getItems(0).getBindingContextPath()).toBe("/Books(201)");
+    expect(await ui5.control<Table>(TABLE).getItems(0).getBindingContext()!.getProperty("title")).toBe("Wuthering Heights");
+    expect(await ui5.control<Button>(GO_BUTTON).getText()).toBe("Go");
+  });
+
+  test("index shortcut for aggregations, like wdi5", async ({ ui5 }) => {
+    const table = await ui5.control<Table>(TABLE);
+    const items = await table.getItems();
+    expect(items).toHaveLength(5);
+    const second = await table.getItems(1);
+    expect(second.id).toBe(items[1].id);
+  });
+
+  test("awaiting the same chain twice runs it once", async ({ ui5 }) => {
+    const chain = ui5.control(TABLE).getItems(0);
+    const first = await chain;
+    expect(await chain).toBe(first);
+  });
+
+  test("helpers work directly on a chain", async ({ ui5 }) => {
+    await expect(await ui5.control(GO_BUTTON).locator()).toBeVisible();
+    await ui5.control(GO_BUTTON).press();
+    expect(await ui5.control<Table>(TABLE).getItems(0).getBindingContextPath()).toBe("/Books(201)");
+  });
+
+  test("reports the failing step with what the previous steps returned", async ({ ui5 }) => {
+    const error = await errorOf(ui5.control(TABLE).getItems(0).getNope());
+    expect(error?.message).toContain('ui5.control({"controlType":"sap.m.Table"}).getItems(0).getNope() failed at .getNope():');
+    expect(error?.message).toContain("'getNope' is not a function on sap.m.ColumnListItem");
+    expect(error?.message).toMatch(/✔ ui5\.control\(.*\) → sap\.m\.Table#/);
+    expect(error?.message).toMatch(/✔ getItems\(0\) → sap\.m\.ColumnListItem#/);
+    expect(error?.message).toContain("✘ getNope()");
+    expect(error?.stack?.split("\n").at(-1)).toMatch(/^\s+at .*chain\.spec\.ts:\d+:\d+/);
+  });
+
+  test("reports an index out of range", async ({ ui5 }) => {
+    const error = await errorOf(ui5.control(TABLE).getItems(99).getId());
+    expect(error?.message).toContain("index 99 out of range (getItems() returned 5 items)");
+    expect(error?.stack).toContain("chain.spec.ts");
+  });
+
+  test("reports null or undefined in the middle of a chain", async ({ ui5 }) => {
+    const error = await errorOf(ui5.control(GO_BUTTON).getTooltip().getText());
+    expect(error?.message).toMatch(/previous step returned (null|undefined), nothing to call getText\(\) on/);
+  });
+
+  test("keeps the 'no control found' message", async ({ ui5 }) => {
+    const error = await errorOf(ui5.control({ id: "nope" }, { timeout: 500 }).getText());
+    expect(error?.message).toMatch(/no control found for selector \{"id":"nope"\} within 500ms\n {2}in ui5\.control\(.*\)\.getText\(\)/);
+    expect(error?.stack).toContain("chain.spec.ts");
+  });
+
+  test("methods of remote controls are chainable too", async ({ ui5 }) => {
+    const table = await ui5.control(TABLE);
+    const row = (await table.getItems(0)) as RemoteControl;
+    expect(await row.getBindingContext().getPath()).toBe("/Books(201)");
+    // a remote control passed as an argument is still the same UI5 object in the browser
+    expect(await table.indexOfItem(row)).toBe(0);
+  });
+});

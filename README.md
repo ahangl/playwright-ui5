@@ -2,7 +2,8 @@
 
 UI5-aware end-to-end testing for [Playwright](https://playwright.dev), inspired by [wdi5](https://ui5-community.github.io/wdi5/):
 
-- **Control API**: find UI5 controls by selector (`controlType`, `properties`, `bindingPath`, `i18NText`, `ancestor`, ...), call their methods, press, enter text, and get native Playwright `Locator`s. Every call first waits until UI5 is idle (no pending requests, timeouts or rendering).
+- **Control API**: find UI5 controls by selector (`controlType`, `properties`, `bindingPath`, `i18NText`, `ancestor`, ...), call their methods (also as a chain with a single `await`), press, enter text, and get native Playwright `Locator`s. Every call first waits until UI5 is idle (no pending requests, timeouts or rendering).
+- **Retrying assertions**: `await expect(ui5.control(sel)).toHaveUI5Text("Go")` retries until the control matches, like Playwright's locator assertions.
 - **SAP Fiori elements V4 test library**: run the official [`sap.fe.test`](https://ui5.sap.com/#/api/sap.fe.test) page objects (`ListReport`, `ObjectPage`, `Shell`) with typed `Given`/`When`/`Then` chains, directly from Playwright tests.
 - **SAP Build Work Zone**: the app is detected automatically in the launchpad iframe. A login provider for SAP IAS saves the session once, and it is reused through Playwright's `storageState`.
 
@@ -78,13 +79,14 @@ The detected frame is re-checked before each call, so opening an app from the ho
 
 | Method | Description |
 | --- | --- |
-| `ui5.control<T>(selector, { timeout })` | Waits for a matching control and returns a `RemoteControl`. Fails if none is found. |
+| `ui5.control<T>(selector, { timeout })` | Waits for a matching control. Await it to get a `RemoteControl`, or chain its methods (see [Chaining](#chaining)). Fails if none is found. |
 | `ui5.controlOrNull(selector)` | Like `control`, but returns `null` when nothing matches. |
-| `ui5.controls(selector)` | All controls that match now. |
+| `ui5.controls(selector)` | All controls that match now. Use `expect(...).toHaveUI5Count(n)` to wait for a number of matches. |
 | `ui5.locator(selector)` | A Playwright `Locator` for the control's DOM element. |
 | `ui5.press(selector)` / `ui5.enterText(selector, text)` | Shortcuts for the control's `press()` / `enterText()`. |
 | `ui5.waitForUI5()` | Waits until UI5 is idle. |
 | `ui5.goTo("#Intent-action" \| "/path")` | Navigates, then waits for UI5. A hash changes only the hash of the current page (or of `baseURL`). |
+| `ui5.goTo({ route, params?, componentId?, replace? })` | Navigates with the app's router (`getRouter().navTo`), then waits for UI5. Without `componentId` it uses the only application component. |
 | `ui5.exec(fn, ...args)` | Runs a function in the app frame. Returned controls become `RemoteControl`s. |
 | `ui5.appFrame()` / `ui5.shellFrame()` | The Playwright `Frame` that runs the app / the launchpad frame. |
 
@@ -97,6 +99,59 @@ A `RemoteControl` gives you:
 - `locator()`, `getProperty()`, `getAggregation()`, `getBindingContextPath()` and `exec(fn)`.
 
 Pass the UI5 class as a type parameter for typed methods: `ui5.control<Input>({...})` with `import type Input from "sap/m/Input"` (needs `@sapui5/types`).
+
+Selectors support every field of UI5's RecordReplay (the same as wdi5), including `interaction`. It chooses the DOM element that `locator()` and `press({ native: true })` use:
+- `"root"` (default): the control's root element.
+- `"focus"`: e.g. the inner `<input>` of an input field.
+- `"press"`, `"auto"`, or `{ idSuffix: "inner" }` for the element with the id `<control id>-inner`.
+
+### Chaining
+
+Method calls can be chained with a single `await`, like wdi5's fluent API. The whole chain runs in one browser round trip:
+
+```ts
+const path = await ui5.control<Table>({ controlType: "sap.m.Table" }).getItems(0).getBindingContextPath();
+const title = await ui5.control<Table>(TABLE).getItems(0).getBindingContext()!.getProperty("title");
+await ui5.control(GO_BUTTON).press();
+```
+
+- Aggregation getters take an index, as in wdi5: `getItems(0)` returns the first item.
+- If a step fails, the error shows the whole chain, the failing step and what the steps before it returned:
+  ```
+  playwright-ui5: ui5.control({"controlType":"sap.m.Table"}).getItems(0).getNope() failed at .getNope():
+    'getNope' is not a function on sap.m.ColumnListItem
+    ✔ ui5.control({"controlType":"sap.m.Table"}) → sap.m.Table#…
+    ✔ getItems(0) → sap.m.ColumnListItem#…
+    ✘ getNope()
+  ```
+- **Chains are lazy.** They only run when awaited, and the result is cached for that chain object. A forgotten `await` does nothing, so enable the ESLint rule [`@typescript-eslint/no-floating-promises`](https://typescript-eslint.io/rules/no-floating-promises/). `press()` and `enterText()` always run.
+- `const table = await ui5.control(...)` still returns the `RemoteControl`, so tests can await each step as well.
+
+## Assertions
+
+`expect` from this package is Playwright's `expect` with extra matchers for UI5 controls. They work like Playwright's locator assertions:
+- Each matcher looks up the control again and retries until the check passes or the `expect` timeout runs out.
+- They also catch changes that happen after UI5 reports idle.
+- They support `.not`.
+- The failure message shows the control, the expected value and the last value read.
+
+| Matcher | Passes when |
+| --- | --- |
+| `toHaveUI5Property(name, value)` | the property equals `value` (deep equality; a RegExp matches strings) |
+| `toHaveUI5Text(text \| RegExp)` | the `text` property matches |
+| `toBeUI5Enabled()` | `enabled` is `true` |
+| `toBeUI5Visible()` | the control is rendered, `visible` is not `false`, and its DOM element is laid out |
+| `toHaveUI5BindingPath(path, { modelName? })` | the path of the binding context matches |
+| `toHaveUI5Count(n)` | `ui5.controls(selector)` finds `n` controls |
+
+```ts
+await expect(ui5.control(GO_BUTTON)).toBeUI5Enabled();
+await expect(ui5.control(TABLE).getItems(0)).toHaveUI5BindingPath("/Books(201)");
+await expect(ui5.controls({ controlType: "sap.m.ColumnListItem" })).toHaveUI5Count(2);
+await expect(ui5.control(GO_BUTTON)).not.toHaveUI5Text("Stop", { timeout: 2_000 });
+```
+
+All matchers accept `{ timeout }`. To combine them with your own matchers, use Playwright's `mergeExpects`.
 
 ## Fiori elements V4 (`fe` fixture)
 
@@ -164,11 +219,17 @@ Selectors can be overridden. For other IdPs, implement the `AuthProvider` interf
 
 | wdi5 | playwright-ui5 |
 | --- | --- |
-| `await browser.asControl({ selector })` | `await ui5.control(selector)` |
+| `await browser.asControl({ selector })` | `await ui5.control(selector)` (the selector is passed directly) |
+| `await browser.asControl({ selector }).getItems(0).getTitle()` (fluent API) | `await ui5.control(selector).getItems(0).getTitle()` |
 | `await browser.allControls({ selector })` | `await ui5.controls(selector)` |
 | `control.press()` / `enterText()` | same |
 | `control.getAggregation("items")` / `getItems()` | same (returns `RemoteControl[]`) |
+| `control.getWebElement()` / `$()` | `control.locator()` (Playwright `Locator`) |
+| `selector.interaction` | same |
+| `wdio_ui5_key` / `forceSelect` | not needed: a `RemoteControl` is looked up by its id on every call |
+| `expect(await control.getText()).toEqual("Go")` | same, or retrying: `await expect(control).toHaveUI5Text("Go")` |
 | `browser.goTo({ sHash })` | `ui5.goTo("#...")` |
+| `browser.goTo({ oRoute: { sName, oParameters } })` | `ui5.goTo({ route, params })` |
 | `browser.screenshot()` | Playwright `page.screenshot()` / `screenshot: "only-on-failure"` |
 | `wdi5.fe.initialize(pages)` + `execute((Given, When, Then) => ...)` | `const { Given, When, Then } = fe.init(pages)`, then `await When...` |
 | `capabilities["wdi5:authentication"]` | `login(page, { provider: ias() })` in a setup project + `storageState` |

@@ -7,14 +7,14 @@ import {
   type TestType,
 } from "@playwright/test";
 import type { UI5Options } from "./config";
-import { FE } from "./fe/FE";
+import { FioriElements } from "./fe/FioriElements";
 import { UI5 } from "./ui5";
 
 export interface UI5Fixtures {
   /** UI5-aware access to the application (controls, waitForUI5, navigation). */
   ui5: UI5;
   /** SAP Fiori elements V4 test library (`sap.fe.test`) facade. */
-  fe: FE;
+  fe: FioriElements;
 }
 
 export interface UI5TestOptions {
@@ -32,8 +32,8 @@ export const test: TestType<
     await use(new UI5(page, ui5Options, baseURL));
   },
   fe: async ({ ui5 }, use) => {
-    await use(new FE(ui5));
+    await use(new FioriElements(ui5));
   },
 });
 
-export { expect } from "@playwright/test";
+export { expect } from "./expect";

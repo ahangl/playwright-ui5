@@ -24,6 +24,31 @@ interface ControlDescriptor {
   methods: string[];
 }
 
+type ChainStart = { selector: unknown } | { ref: { id?: string; h?: string } };
+
+interface ChainStep {
+  m: string;
+  a: unknown[];
+}
+
+/** What the start or a step of a chain returned. */
+interface Hop {
+  type: string;
+  id?: string;
+  length?: number;
+}
+
+interface ChainResult {
+  ok: boolean;
+  value?: Serialized;
+  /** Index of the failing step; -1 when resolving the start failed. */
+  failedAt?: number;
+  notFound?: boolean;
+  error?: string;
+  /** One entry for the start and each step that ran successfully. */
+  hops: Hop[];
+}
+
 interface FEPageSpec {
   type: string;
   definition?: Record<string, unknown>;
@@ -111,8 +136,9 @@ const BRIDGE_VERSION = "1";
     return result;
   }
 
-  function describe(control: any): ControlDescriptor {
-    const dom = typeof control.getDomRef === "function" ? control.getDomRef() : null;
+  /** `interactionEl`: the DOM element matched by a selector with `interaction` (instead of the root). */
+  function describe(control: any, interactionEl?: Element | null): ControlDescriptor {
+    const dom = interactionEl ?? (typeof control.getDomRef === "function" ? control.getDomRef() : null);
     return {
       id: control.getId(),
       className: control.getMetadata().getName(),
@@ -197,8 +223,23 @@ const BRIDGE_VERSION = "1";
     await M.RecordReplay.waitForUI5({ timeout, interval: 100 });
   }
 
+  interface Match {
+    ctl: any;
+    /** DOM element matched by a selector with `interaction`, otherwise null. */
+    interactionEl: Element | null;
+  }
+
+  /**
+   * RecordReplay returns the DOM element it would interact with - by default ("auto") that can be
+   * an element of a child control (e.g. the growing trigger of a sap.m.Table). Asking for the root
+   * element makes the DOM -> control mapping return the matched control itself.
+   */
+  function rootSelector(sel: any): any {
+    return sel && typeof sel === "object" ? { ...sel, interaction: "root" } : sel;
+  }
+
   /** Polls until a control matches (or the timeout is reached). Returns null if nothing matches. */
-  async function findControl(selector: any, timeout: number): Promise<ControlDescriptor | null> {
+  async function findMatch(selector: any, timeout: number): Promise<Match | null> {
     await ready;
     const deadline = Date.now() + timeout;
     const sel = deser(selector);
@@ -206,9 +247,13 @@ const BRIDGE_VERSION = "1";
     do {
       try {
         await M.RecordReplay.waitForUI5({ timeout: Math.max(deadline - Date.now(), 1000), interval: 100 });
-        const el = await M.RecordReplay.findDOMElementByControlSelector({ selector: sel });
+        const el = await M.RecordReplay.findDOMElementByControlSelector({ selector: rootSelector(sel) });
         const ctl = el && controlFromDom(el);
-        if (ctl) return describe(ctl);
+        if (ctl) {
+          const interactionEl =
+            sel && sel.interaction ? await M.RecordReplay.findDOMElementByControlSelector({ selector: sel }) : null;
+          return { ctl, interactionEl };
+        }
       } catch (e) {
         lastError = e;
       }
@@ -220,20 +265,29 @@ const BRIDGE_VERSION = "1";
     return null;
   }
 
+  async function findControl(selector: any, timeout: number): Promise<ControlDescriptor | null> {
+    const match = await findMatch(selector, timeout);
+    return match ? describe(match.ctl, match.interactionEl) : null;
+  }
+
   async function findControls(selector: any, timeout: number): Promise<ControlDescriptor[]> {
     await waitForUI5(timeout);
     const RR = M.RecordReplay;
     if (typeof RR.findAllDOMElementsByControlSelector !== "function") {
       throw new Error("playwright-ui5: findAll requires UI5 >= 1.80");
     }
-    const els: Element[] = await RR.findAllDOMElementsByControlSelector({ selector: deser(selector) });
+    const sel = deser(selector);
+    const els: Element[] = await RR.findAllDOMElementsByControlSelector({ selector: rootSelector(sel) });
     const seen = new Set<string>();
     const out: ControlDescriptor[] = [];
     for (const el of els) {
       const ctl = controlFromDom(el);
       if (ctl && !seen.has(ctl.getId())) {
         seen.add(ctl.getId());
-        out.push(describe(ctl));
+        const interactionEl = sel && sel.interaction
+          ? await RR.findDOMElementByControlSelector({ selector: { id: ctl.getId(), interaction: sel.interaction } })
+          : null;
+        out.push(describe(ctl, interactionEl));
       }
     }
     return out;
@@ -244,16 +298,143 @@ const BRIDGE_VERSION = "1";
     return describe(resolveTarget(target));
   }
 
-  async function call(target: Target, method: string, args: unknown[], timeout: number): Promise<Serialized> {
-    await waitForUI5(timeout);
-    const obj = resolveTarget(target);
-    const fn = obj[method];
-    if (typeof fn !== "function") {
-      throw new Error(`playwright-ui5: '${method}' is not a function on ${obj?.getMetadata?.().getName?.() ?? "object"}`);
+  function typeName(v: any): string {
+    if (v === null) return "null";
+    if (typeof v !== "object" && typeof v !== "function") return typeof v;
+    if (typeof v.getMetadata === "function") return v.getMetadata().getName();
+    if (Array.isArray(v)) return "Array";
+    return Object.getPrototypeOf(v)?.constructor?.name ?? "Object";
+  }
+
+  /** What a chain step returned, for error messages. */
+  function hopOf(v: any): Hop {
+    if (v === undefined || v === null) return { type: String(v) };
+    const hop: Hop = { type: typeName(v) };
+    if (M.Element && v instanceof M.Element) hop.id = v.getId();
+    if (Array.isArray(v)) hop.length = v.length;
+    return hop;
+  }
+
+  /**
+   * wdi5-style index shortcut: `getItems(0)` on a multiple aggregation returns the item at that
+   * index (UI5's own getter takes no arguments).
+   */
+  function aggregationIndex(obj: any, method: string, args: unknown[]): number | undefined {
+    if (args.length !== 1 || typeof args[0] !== "number" || !/^get[A-Z]/.test(method)) return undefined;
+    if (!obj || typeof obj.getMetadata !== "function") return undefined;
+    const meta = obj.getMetadata();
+    const name = method.charAt(3).toLowerCase() + method.slice(4);
+    const aggregation = typeof meta.getAllAggregations === "function" ? meta.getAllAggregations()[name] : undefined;
+    return aggregation && aggregation.multiple ? (args[0] as number) : undefined;
+  }
+
+  /**
+   * Resolves `start` (a control selector or a reference to a control/object), then calls the
+   * steps one after the other on the previous result - all in one round trip. Failures are
+   * returned (not thrown) together with what every step returned, so the caller can show them.
+   */
+  async function chain(start: ChainStart, steps: ChainStep[], timeout: number): Promise<ChainResult> {
+    let current: any;
+    let interactionEl: Element | null = null;
+    const hops: Hop[] = [];
+    try {
+      if ("selector" in start) {
+        const match = await findMatch(start.selector, timeout);
+        if (!match) return { ok: false, notFound: true, failedAt: -1, error: "no control found", hops };
+        current = match.ctl;
+        interactionEl = match.interactionEl;
+      } else {
+        await waitForUI5(timeout);
+        current = resolveTarget(start.ref);
+      }
+    } catch (e) {
+      return { ok: false, failedAt: -1, error: errMessage(e), hops };
     }
-    let result = fn.apply(obj, deser(args));
-    if (result && typeof result.then === "function") result = await result;
-    return ser(result);
+    hops.push(hopOf(current));
+
+    for (let i = 0; i < steps.length; i++) {
+      const { m, a } = steps[i];
+      if (current === undefined || current === null) {
+        return { ok: false, failedAt: i, error: `previous step returned ${current}, nothing to call ${m}() on`, hops };
+      }
+      try {
+        const args = deser(a) as unknown[];
+        const fn = current[m];
+        if (typeof fn !== "function") {
+          return { ok: false, failedAt: i, error: `'${m}' is not a function on ${typeName(current)}`, hops };
+        }
+        const index = aggregationIndex(current, m, args);
+        let result: any;
+        if (index !== undefined) {
+          const all = fn.call(current) || [];
+          if (index < 0 || index >= all.length) {
+            return { ok: false, failedAt: i, error: `index ${index} out of range (${m}() returned ${all.length} items)`, hops };
+          }
+          result = all[index];
+        } else {
+          result = fn.apply(current, args);
+          if (result && typeof result.then === "function") result = await result;
+        }
+        current = result;
+        interactionEl = null;
+      } catch (e) {
+        return { ok: false, failedAt: i, error: errMessage(e), hops };
+      }
+      hops.push(hopOf(current));
+    }
+
+    const value =
+      interactionEl && M.Element && current instanceof M.Element
+        ? ({ t: "c", d: describe(current, interactionEl) } as Serialized)
+        : ser(current);
+    return { ok: true, value, hops };
+  }
+
+  /** Router navigation (`getRouter().navTo`) on the given or the only application component. */
+  async function navTo(
+    route: string,
+    params: Record<string, unknown> | undefined,
+    componentId: string | undefined,
+    replace: boolean,
+    timeout: number
+  ): Promise<void> {
+    await waitForUI5(timeout);
+    const [Component] = await requireAsync(["sap/ui/core/Component"]);
+    const byComponentId = (id: string) =>
+      typeof Component.getComponentById === "function" ? Component.getComponentById(id) : Component.get(id);
+    const all: any[] = Component.registry
+      ? typeof Component.registry.filter === "function"
+        ? Component.registry.filter(() => true)
+        : Object.values(Component.registry.all())
+      : [];
+    const routed = all.filter((c) => typeof c.getRouter === "function" && c.getRouter());
+    let component: any;
+    if (componentId) {
+      component = byComponentId(componentId);
+      if (!component) throw new Error(`playwright-ui5: component '${componentId}' does not exist`);
+    } else {
+      const apps = routed.filter(
+        (c) => typeof c.getManifestEntry === "function" && c.getManifestEntry("/sap.app/type") === "application"
+      );
+      const candidates = apps.length ? apps : routed;
+      if (candidates.length !== 1) {
+        throw new Error(
+          `playwright-ui5: goTo({ route }) needs a componentId - ${candidates.length} components with a router found` +
+            (candidates.length ? `: ${candidates.map((c) => c.getId()).join(", ")}` : "")
+        );
+      }
+      component = candidates[0];
+    }
+    const router = typeof component.getRouter === "function" ? component.getRouter() : undefined;
+    if (!router) throw new Error(`playwright-ui5: component '${component.getId()}' has no router`);
+    if (!router.getRoute(route)) {
+      const known = Object.keys(router._oRoutes || {});
+      throw new Error(
+        `playwright-ui5: route '${route}' does not exist in component '${component.getId()}'` +
+          (known.length ? ` - routes: ${known.join(", ")}` : "")
+      );
+    }
+    router.navTo(route, params || {}, undefined, replace);
   }
 
   async function interact(
@@ -398,7 +579,8 @@ const BRIDGE_VERSION = "1";
     findControl,
     findControls,
     describeTarget,
-    call,
+    chain,
+    navTo,
     interact,
     release,
     ser,
