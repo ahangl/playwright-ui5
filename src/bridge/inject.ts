@@ -1,4 +1,4 @@
-import type { Frame } from "@playwright/test";
+import type { Frame, Page } from "@playwright/test";
 import bridgeSource from "virtual:pwui5-bridge";
 import { cleanStack } from "../util/step";
 
@@ -19,6 +19,26 @@ export interface ControlDescriptor {
 }
 
 const NOT_INJECTED = "__pwui5_not_injected__";
+
+/** Settings applied to the bridge in every frame of a page (see `__pwui5.configure`). */
+export interface BridgeConfig {
+  ignoreAutoWaitUrls: Array<string | RegExp>;
+}
+
+const bridgeConfigs = new WeakMap<Page, BridgeConfig>();
+
+/** Sets the bridge settings for all frames of the page (applied whenever the bridge is injected). */
+export function setBridgeConfig(page: Page, config: BridgeConfig): void {
+  bridgeConfigs.set(page, config);
+}
+
+function wireConfig(config: BridgeConfig) {
+  return {
+    ignoreAutoWaitUrls: config.ignoreAutoWaitUrls.map((p) =>
+      p instanceof RegExp ? { source: p.source, flags: p.flags } : { source: p, flags: "" }
+    ),
+  };
+}
 
 /** Makes sure UI5 is loaded in the frame and the bridge is injected and ready. */
 export async function ensureBridge(frame: Frame, timeout: number): Promise<void> {
@@ -46,6 +66,10 @@ export async function ensureBridge(frame: Frame, timeout: number): Promise<void>
   }
   await frame.evaluate(bridgeSource);
   await frame.evaluate(() => (window as any).__pwui5.ready);
+  const config = bridgeConfigs.get(frame.page());
+  if (config && config.ignoreAutoWaitUrls.length) {
+    await frame.evaluate((c) => (window as any).__pwui5.configure(c), wireConfig(config));
+  }
 }
 
 /**

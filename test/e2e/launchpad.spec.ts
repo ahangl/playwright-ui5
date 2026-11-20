@@ -1,5 +1,6 @@
 import { test, expect } from "@ahangl/playwright-ui5";
 import type { Page } from "@playwright/test";
+import type Button from "sap/m/Button";
 
 const pages = {
   onTheMainPage: { ListReport: { appId: "fixture.books", componentId: "BooksList", contextPath: "/Books" } },
@@ -38,6 +39,21 @@ test.describe("launchpad with apps in an iframe (like SAP Build Work Zone)", () 
     const go = await ui5.control(GO_BUTTON);
     expect(go.frame).not.toBe(page.mainFrame());
     expect((await ui5.appFrame()).url()).toContain("/index.html");
+  });
+});
+
+test.describe("controls in the launchpad shell", () => {
+  const USER_BUTTON = { controlType: "sap.m.Button", properties: { text: "User" } };
+
+  test("ui5.shell finds controls in the top-level frame, ui5 in the app frame", async ({ page, ui5 }) => {
+    await ui5.goTo("/test/launchpadHost.html#Books-display");
+    const go = await ui5.control(GO_BUTTON);
+    expect(go.frame).not.toBe(page.mainFrame());
+
+    expect(await ui5.shell.control<Button>(USER_BUTTON).getText()).toBe("User");
+    await expect(ui5.shell.control(USER_BUTTON)).toBeUI5Visible();
+    expect(await ui5.shell.controlOrNull(GO_BUTTON, { timeout: 500 })).toBeNull();
+    expect(await ui5.controlOrNull(USER_BUTTON, { timeout: 500 })).toBeNull();
   });
 });
 

@@ -1,6 +1,6 @@
 import type { Frame, Locator, Page } from "@playwright/test";
 import { resolveOptions, type ResolvedUI5Options, type UI5Options } from "./config";
-import { callBridge, ensureBridge, type ControlDescriptor, type Serialized } from "./bridge/inject";
+import { callBridge, ensureBridge, setBridgeConfig, type ControlDescriptor, type Serialized } from "./bridge/inject";
 import { isFrameStillValid, resolveAppFrame } from "./frame/resolveAppFrame";
 import {
   createRemoteControl,
@@ -27,6 +27,11 @@ export interface UI5Route {
   componentId?: string;
   /** Replace the current history entry instead of adding one. */
   replace?: boolean;
+  /**
+   * Routing information for nested components, passed to `navTo` as `oComponentTargetInfo`
+   * (wdi5: `oRoute.oComponentTargetInfo`).
+   */
+  componentTargetInfo?: Record<string, unknown>;
 }
 
 /**
@@ -45,6 +50,9 @@ export class UI5 {
     private readonly baseURL?: string
   ) {
     this.options = resolveOptions(options);
+    if (this.options.ignoreAutoWaitUrls.length) {
+      setBridgeConfig(page, { ignoreAutoWaitUrls: this.options.ignoreAutoWaitUrls });
+    }
   }
 
   // ----------------------------------------------------------------------------------------------
@@ -64,6 +72,20 @@ export class UI5 {
   /** The top-level frame (the launchpad / Work Zone shell, if any). */
   shellFrame(): Frame {
     return this.page.mainFrame();
+  }
+
+  private shellUI5: UI5 | undefined;
+
+  /**
+   * The control API for the top-level frame - in SAP Build Work Zone / a launchpad that is the
+   * shell (header, user menu, ...), while `ui5` itself works in the application frame. The
+   * counterpart of wdi5's `toWorkZoneShell()`, without switching back and forth.
+   *
+   * @example
+   * await ui5.shell.control({ id: "userActionsMenuHeaderButton" }).press();
+   */
+  get shell(): UI5 {
+    return (this.shellUI5 ??= new UI5(this.page, { ...this.options, appFrame: "main" }, this.baseURL));
   }
 
   /** Forget the resolved app frame, e.g. after navigating to another app. */
@@ -99,10 +121,10 @@ export class UI5 {
    */
   async goTo(target: string | UI5Route, options: { timeout?: number } = {}): Promise<void> {
     if (typeof target !== "string") {
-      const { route, params, componentId, replace } = target;
+      const { route, params, componentId, replace, componentTargetInfo } = target;
       await step(`ui5: go to route ${route}${params ? " " + JSON.stringify(params) : ""}`, async () => {
         const { frame, timeout } = await this.ctx(options.timeout);
-        await callBridge(frame, "navTo", [route, params, componentId, !!replace, timeout], timeout);
+        await callBridge(frame, "navTo", [route, params, componentId, !!replace, componentTargetInfo, timeout], timeout);
         await this.waitForUI5(options);
       });
       return;
@@ -152,8 +174,7 @@ export class UI5 {
   control<T = unknown>(selector: UI5Selector, options: { timeout?: number } = {}): ControlChain<T> {
     return createChain(
       {
-        ctx: (timeout) => this.ctx(timeout ?? options.timeout),
-        start: { selector },
+        resolve: async (timeout) => ({ ctx: await this.ctx(timeout ?? options.timeout), start: { selector } }),
         label: `ui5.control(${describeSelector(selector)})`,
       },
       [],

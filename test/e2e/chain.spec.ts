@@ -70,6 +70,28 @@ test.describe("fluent chaining", () => {
     expect(error?.stack).toContain("chain.spec.ts");
   });
 
+  test("chains continue after press() and enterText()", async ({ ui5 }) => {
+    expect(await ui5.control<Button>(GO_BUTTON).press().getText()).toBe("Go");
+
+    const author = await ui5.control({ controlType: "sap.ui.mdc.FilterField", properties: { label: "Author" } });
+    const conditions = await author.enterText("Edgar Allan Poe").getConditions();
+    expect(conditions).toHaveLength(1);
+
+    // awaiting an action without continuing resolves to the control
+    const pressed = await ui5.control(GO_BUTTON).press();
+    expect(pressed.className).toBe("sap.m.Button");
+  });
+
+  test("a failed action rejects the chain and later steps do not run", async ({ ui5 }) => {
+    const go = await ui5.control(GO_BUTTON, { timeout: 1_000 });
+    await go.exec((control: any) => control.setEnabled(false));
+    const error = await errorOf(go.press().setText("changed"));
+    expect(error?.message).toMatch(/is not interactable .*enabled=false/);
+    expect(error?.stack).toContain("chain.spec.ts");
+    await go.exec((control: any) => control.setEnabled(true));
+    expect(await go.getText()).toBe("Go");
+  });
+
   test("methods of remote controls are chainable too", async ({ ui5 }) => {
     const table = await ui5.control(TABLE);
     const row = (await table.getItems(0)) as RemoteControl;

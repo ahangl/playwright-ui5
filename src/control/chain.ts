@@ -1,7 +1,7 @@
 import { callBridge, type ControlDescriptor, type Serialized } from "../bridge/inject";
 import { errorAt, formatArgs } from "../util/step";
 import type { UI5Selector } from "./selector";
-import { createRemoteControl, fromBrowser, toBrowser, UI5Control, type RemoteContext } from "./remote";
+import { contextOf, createRemoteControl, fromBrowser, toBrowser, UI5Control, type RemoteContext } from "./remote";
 
 /** Internals of a chain or query, used by the `expect` matchers (re-running it on every attempt). */
 export const CHAIN = Symbol.for("playwright-ui5.chain");
@@ -22,11 +22,15 @@ export function chainInternals(value: unknown): ChainInternals | undefined {
 }
 
 type Ref = { id: string } | { h: string };
+type Start = { selector: UI5Selector } | { ref: Ref };
 
 /** Where a chain starts: a control selector (`ui5.control`) or an existing remote control/object. */
 export interface ChainSource {
-  ctx(timeout?: number): Promise<RemoteContext>;
-  start: { selector: UI5Selector } | { ref: Ref };
+  /**
+   * Frame/timeouts and the start of the chain. Called when the chain runs; it may first wait for
+   * something (e.g. a `press()` that the chain continues after).
+   */
+  resolve(timeout?: number): Promise<{ ctx: RemoteContext; start: Start }>;
   /** e.g. `ui5.control({"controlType":"sap.m.Button"})` or `sap.m.Button#__button0` */
   label: string;
 }
@@ -52,7 +56,9 @@ interface ChainResult {
 }
 
 /** Helpers of {@link UI5Control} that are available on a control chain (they resolve it first). */
-const HELPERS = new Set(["press", "enterText", "exec", "locator", "getBindingContextPath", "reload"]);
+const HELPERS = new Set(["exec", "locator", "getBindingContextPath", "reload"]);
+/** Actions: they run right away, and the chain continues on the same control afterwards. */
+const ACTIONS = new Set(["press", "enterText"]);
 
 export function describeSelector(selector: UI5Selector): string {
   try {
@@ -78,19 +84,20 @@ function describeHop(hop: Hop | undefined): string {
 async function execute(source: ChainSource, steps: Step[], site: Error, timeout?: number): Promise<unknown> {
   const description = source.label + describeSteps(steps);
   let ctx: RemoteContext;
+  let start: Start;
   let result: ChainResult;
   try {
-    ctx = await source.ctx(timeout);
+    ({ ctx, start } = await source.resolve(timeout));
     const wireSteps = steps.map((s) => ({ m: s.m, a: toBrowser(s.a) }));
-    result = await callBridge<ChainResult>(ctx.frame, "chain", [toBrowser(source.start), wireSteps, ctx.timeout], ctx.timeout);
+    result = await callBridge<ChainResult>(ctx.frame, "chain", [toBrowser(start), wireSteps, ctx.timeout], ctx.timeout);
   } catch (e) {
     throw errorAt(e instanceof Error ? e.message : String(e), site);
   }
   if (result.ok) return fromBrowser(result.value as Serialized, ctx);
 
-  if (result.notFound && "selector" in source.start) {
+  if (result.notFound && "selector" in start) {
     throw errorAt(
-      `playwright-ui5: no control found for selector ${describeSelector(source.start.selector)} within ${ctx.timeout}ms` +
+      `playwright-ui5: no control found for selector ${describeSelector(start.selector)} within ${ctx.timeout}ms` +
         (steps.length ? `\n  in ${description}` : ""),
       site
     );
@@ -109,6 +116,10 @@ async function execute(source: ChainSource, steps: Step[], site: Error, timeout?
   throw errorAt(lines.join("\n"), site);
 }
 
+function withTimeout(ctx: RemoteContext, timeout?: number): RemoteContext {
+  return timeout ? { ...ctx, timeout } : ctx;
+}
+
 /**
  * A recorded chain of method calls. It runs (in one browser round trip) when it is awaited, and
  * the result is cached: awaiting the same chain object twice runs it once.
@@ -121,6 +132,15 @@ export function createChain(source: ChainSource, steps: Step[], site: Error): an
     description: source.label + describeSteps(steps),
     kind: "chain",
     run: (options = {}) => execute(source, steps, site, options.timeout),
+  };
+
+  /** Resolves the chain and checks that it ends at a control (for helpers and actions). */
+  const control = async (helper: string): Promise<UI5Control> => {
+    const value = await settle();
+    if (!(value instanceof UI5Control)) {
+      throw errorAt(`playwright-ui5: ${helper}() needs a control, but ${internals.description} returned ${String(value)}`, site);
+    }
+    return value;
   };
 
   return new Proxy(
@@ -137,15 +157,26 @@ export function createChain(source: ChainSource, steps: Step[], site: Error): an
         }
         if (typeof prop !== "string") return undefined;
         if (HELPERS.has(prop)) {
-          return async (...args: unknown[]) => {
-            const value = await settle();
-            if (!(value instanceof UI5Control)) {
-              throw errorAt(
-                `playwright-ui5: ${prop}() needs a control, but ${internals.description} returned ${String(value)}`,
-                new Error()
-              );
-            }
-            return (value as any)[prop](...args);
+          return async (...args: unknown[]) => ((await control(prop)) as any)[prop](...args);
+        }
+        if (ACTIONS.has(prop)) {
+          return (...args: unknown[]) => {
+            // Start right away (like UI5Control.press); the returned chain continues afterwards.
+            const acted = control(prop).then(async (c) => {
+              await (c as any)[prop](...args);
+              return c;
+            });
+            return createChain(
+              {
+                label: `${internals.description}.${prop}(${formatArgs(args)})`,
+                resolve: async (timeout) => {
+                  const c = await acted;
+                  return { ctx: withTimeout(contextOf(c), timeout), start: { ref: { id: c.id } } };
+                },
+              },
+              [],
+              new Error()
+            );
           };
         }
         return (...args: unknown[]) => createChain(source, [...steps, { m: prop, a: args }], new Error());
@@ -156,7 +187,29 @@ export function createChain(source: ChainSource, steps: Step[], site: Error): an
 
 /** Starts a chain from an existing remote control or object (calling one of its methods). */
 export function chainFrom(ctx: RemoteContext, ref: Ref, label: string, method: string, args: unknown[]): any {
-  return createChain({ ctx: async (timeout) => (timeout ? { ...ctx, timeout } : ctx), start: { ref }, label }, [{ m: method, a: args }], new Error());
+  return createChain(
+    { label, resolve: async (timeout) => ({ ctx: withTimeout(ctx, timeout), start: { ref } }) },
+    [{ m: method, a: args }],
+    new Error()
+  );
+}
+
+/**
+ * A chain on a control that continues after `before` (an action that already started), e.g. the
+ * result of `control.press()`.
+ */
+export function chainAfter(ctx: RemoteContext, id: string, label: string, before: Promise<unknown>): any {
+  return createChain(
+    {
+      label,
+      resolve: async (timeout) => {
+        await before;
+        return { ctx: withTimeout(ctx, timeout), start: { ref: { id } } };
+      },
+    },
+    [],
+    new Error()
+  );
 }
 
 /**

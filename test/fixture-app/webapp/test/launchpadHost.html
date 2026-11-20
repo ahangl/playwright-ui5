@@ -54,8 +54,11 @@
       }
 
       window.addEventListener("hashchange", navigate);
-      sap.ui.require(["sap/ui/core/Core"], function (Core) {
-        Core.ready().then(navigate);
+      sap.ui.require(["sap/ui/core/Core", "sap/m/Button"], function (Core, Button) {
+        Core.ready().then(function () {
+          new Button("shell-user", { text: "User" }).placeAt("shell-header");
+          navigate();
+        });
       });
     </script>
   </head>

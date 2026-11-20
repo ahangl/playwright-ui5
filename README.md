@@ -59,6 +59,7 @@ export default defineConfig<UI5TestOptions>({
       waitForUI5Timeout: 15_000, // wait for UI5 idle / controls to appear
       feTimeout: 30_000, // per Fiori elements statement (OPA timeout)
       appFrame: "auto", // "auto" | "main" | "<css selector of the app iframe>"
+      ignoreAutoWaitUrls: [/\/longpoll/, "notifications\\?"], // requests that are never waited for
     },
   },
 });
@@ -75,6 +76,12 @@ If the main frame is a launchpad, the helper asks it where the current app runs 
 
 The detected frame is re-checked before each call, so opening an app from the home page (e.g. via `onTheShell` or `ui5.goTo("#Intent-action")`) switches to the new app's iframe.
 
+`ignoreAutoWaitUrls` lists requests that waiting for UI5 ignores, like wdi5's option of the same name. Use it for requests that never finish, such as long polling or push channels. Without it, every call waits for them until `waitForUI5Timeout` runs out.
+- Patterns are RegExps or strings. A string is a regex source, so escape `?` and `.` where needed.
+- XHR and `fetch` requests are both covered.
+- Requests opened before the library first talks to a frame are still waited for until they finish. In practice that's only a request opened during page load that never finishes.
+- Ignoring `fetch` needs the `ui5` fixture: it saves the browser's own `fetch` before UI5 loads. If you create `new UI5(page, options)` yourself, only XHR requests are ignored.
+
 ## Control API (`ui5` fixture)
 
 | Method | Description |
@@ -86,8 +93,9 @@ The detected frame is re-checked before each call, so opening an app from the ho
 | `ui5.press(selector)` / `ui5.enterText(selector, text)` | Shortcuts for the control's `press()` / `enterText()`. |
 | `ui5.waitForUI5()` | Waits until UI5 is idle. |
 | `ui5.goTo("#Intent-action" \| "/path")` | Navigates, then waits for UI5. A hash changes only the hash of the current page (or of `baseURL`). |
-| `ui5.goTo({ route, params?, componentId?, replace? })` | Navigates with the app's router (`getRouter().navTo`), then waits for UI5. Without `componentId` it uses the only application component. |
+| `ui5.goTo({ route, params?, componentId?, replace?, componentTargetInfo? })` | Navigates with the app's router (`getRouter().navTo`), then waits for UI5. Without `componentId` it uses the only application component. |
 | `ui5.exec(fn, ...args)` | Runs a function in the app frame. Returned controls become `RemoteControl`s. |
+| `ui5.shell` | The same control API for the top-level frame, i.e. the launchpad / Work Zone shell (header, user menu). `ui5` itself works in the app frame. Example: `await ui5.shell.control({ id: "userActionsMenuHeaderButton" }).press()`. |
 | `ui5.appFrame()` / `ui5.shellFrame()` | The Playwright `Frame` that runs the app / the launchpad frame. |
 
 A `RemoteControl` gives you:
@@ -95,7 +103,7 @@ A `RemoteControl` gives you:
   - Controls come back as `RemoteControl`s.
   - Other objects come back as handles you can call methods on, such as a binding context.
   - You can pass a `RemoteControl` back as an argument.
-- `press({ native? })` and `enterText(text, { clearTextFirst? })`. Both use OPA's actions (RecordReplay) and wait until the control is visible, enabled, not busy and not covered by a popup. `native: true` uses a real Playwright click instead.
+- `press({ native? })` and `enterText(text, { clearTextFirst? })`. Both use OPA's actions (RecordReplay) and wait until the control is visible, enabled, not busy and not covered by a popup. `native: true` uses a real Playwright click instead. Both start right away and return a chain on the same control, so you can continue: `await button.press().getText()`.
 - `locator()`, `getProperty()`, `getAggregation()`, `getBindingContextPath()` and `exec(fn)`.
 
 Pass the UI5 class as a type parameter for typed methods: `ui5.control<Input>({...})` with `import type Input from "sap/m/Input"` (needs `@sapui5/types`).
@@ -124,6 +132,7 @@ await ui5.control(GO_BUTTON).press();
     ✔ getItems(0) → sap.m.ColumnListItem#…
     ✘ getNope()
   ```
+- Actions can be part of a chain: `await ui5.control(GO_BUTTON).press().getText()`. The chain continues on the same control after the action. If the action fails, the chain rejects and the later steps don't run.
 - **Chains are lazy.** They only run when awaited, and the result is cached for that chain object. A forgotten `await` does nothing, so enable the ESLint rule [`@typescript-eslint/no-floating-promises`](https://typescript-eslint.io/rules/no-floating-promises/). `press()` and `enterText()` always run.
 - `const table = await ui5.control(...)` still returns the `RemoteControl`, so tests can await each step as well.
 
@@ -222,18 +231,45 @@ Selectors can be overridden. For other IdPs, implement the `AuthProvider` interf
 | `await browser.asControl({ selector })` | `await ui5.control(selector)` (the selector is passed directly) |
 | `await browser.asControl({ selector }).getItems(0).getTitle()` (fluent API) | `await ui5.control(selector).getItems(0).getTitle()` |
 | `await browser.allControls({ selector })` | `await ui5.controls(selector)` |
-| `control.press()` / `enterText()` | same |
+| `control.press()` / `enterText()` | same (also chainable: `press().getText()`) |
 | `control.getAggregation("items")` / `getItems()` | same (returns `RemoteControl[]`) |
 | `control.getWebElement()` / `$()` | `control.locator()` (Playwright `Locator`) |
 | `selector.interaction` | same |
 | `wdio_ui5_key` / `forceSelect` | not needed: a `RemoteControl` is looked up by its id on every call |
 | `expect(await control.getText()).toEqual("Go")` | same, or retrying: `await expect(control).toHaveUI5Text("Go")` |
 | `browser.goTo({ sHash })` | `ui5.goTo("#...")` |
-| `browser.goTo({ oRoute: { sName, oParameters } })` | `ui5.goTo({ route, params })` |
+| `browser.goTo({ oRoute: { sComponentId, sName, oParameters, oComponentTargetInfo, bReplace } })` | `ui5.goTo({ componentId, route, params, componentTargetInfo, replace })` |
+| `wdi5.toWorkZoneShell()` / `wdi5.toWorkZoneApp()` | `ui5.shell.control(...)` / `ui5.control(...)`, no switching needed |
+| `btpWorkZoneEnablement`, `skipInjectUI5OnStart` | not needed: the app frame is detected and the library is injected automatically |
+| `ignoreAutoWaitUrls` | `ui5Options.ignoreAutoWaitUrls` |
+| `control.exec(function () { return this.getText() })` | `control.exec((control) => control.getText())`, see [Porting from wdi5](#porting-from-wdi5) |
+| `control.fireEvent(name, { eval: () => mock })` | `control.exec(...)`, see [Porting from wdi5](#porting-from-wdi5) |
 | `browser.screenshot()` | Playwright `page.screenshot()` / `screenshot: "only-on-failure"` |
 | `wdi5.fe.initialize(pages)` + `execute((Given, When, Then) => ...)` | `const { Given, When, Then } = fe.init(pages)`, then `await When...` |
 | `capabilities["wdi5:authentication"]` | `login(page, { provider: ias() })` in a setup project + `storageState` |
 | `waitForUI5Timeout` | `ui5Options.waitForUI5Timeout` |
+
+### Porting from wdi5
+
+**`exec`:** in wdi5 the control is `this`, and the arguments start at the first parameter. Here the control is the first parameter, followed by the arguments, so TypeScript can type it:
+
+```ts
+// wdi5
+await button.exec(function (suffix) { return this.getText() + suffix }, "!")
+// playwright-ui5
+await button.exec((control: Button, suffix: string) => control.getText() + suffix, "!");
+```
+
+The function runs in the browser. It can't use variables of the test, so pass them as arguments.
+
+**Functions as arguments:** method arguments are sent to the browser as data, so a function can't be an argument. Playwright rejects it with "Attempting to serialize unexpected value". wdi5's `fireEvent` mocks with `eval` become an `exec` that builds the mock in the browser:
+
+```ts
+// wdi5
+await list.fireEvent("itemPress", { eval: () => ({ listItem: { data: () => "account.relationships" } }) })
+// playwright-ui5
+await list.exec((l, key) => l.fireItemPress({ listItem: { data: () => key } }), "account.relationships");
+```
 
 ## Development
 

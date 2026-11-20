@@ -20,6 +20,15 @@ export interface UI5Options {
    * CSS selector used by `appFrame: "auto"` to detect the launchpad application iframe.
    */
   launchpadIframeSelector?: string;
+  /**
+   * Requests (XHR and fetch) whose URL matches one of these patterns are not waited for, e.g.
+   * long polling or push channels that never finish. Strings are regular expression sources (like
+   * wdi5's `ignoreAutoWaitUrls`). Default: `[]`.
+   *
+   * Requests opened before the library first talks to a frame are still waited for until they
+   * finish. Ignoring `fetch` requests needs the `ui5` fixture (it saves the browser's own `fetch`).
+   */
+  ignoreAutoWaitUrls?: Array<string | RegExp>;
 }
 
 export type ResolvedUI5Options = Required<UI5Options>;
@@ -36,5 +45,6 @@ export function resolveOptions(options: UI5Options = {}): ResolvedUI5Options {
     appFrame: options.appFrame ?? "auto",
     feTimeout: options.feTimeout ?? 30_000,
     launchpadIframeSelector: options.launchpadIframeSelector ?? DEFAULT_LAUNCHPAD_IFRAME_SELECTOR,
+    ignoreAutoWaitUrls: options.ignoreAutoWaitUrls ?? [],
   };
 }

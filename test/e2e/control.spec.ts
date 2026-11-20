@@ -27,6 +27,11 @@ test.describe("control API (standalone app)", () => {
     expect(await go.getText()).toBe("Go");
   });
 
+  test("supports the declarative RegExp notation of wdi5/OPA", async ({ ui5 }) => {
+    const selector = { controlType: "sap.m.Button", properties: { text: { regex: { source: "^g", flags: "i" } } } };
+    expect(await ui5.control(selector, { timeout: 3_000 }).getText()).toBe("Go");
+  });
+
   test("exposes a native Playwright locator", async ({ ui5 }) => {
     const go = await ui5.locator(GO_BUTTON);
     await expect(go).toBeVisible();
@@ -93,7 +98,7 @@ test.describe("control API (standalone app)", () => {
   });
 
   test("navigates with the app's router", async ({ ui5, page }) => {
-    await ui5.goTo({ route: "BooksObjectPage", params: { key: "251" } });
+    await ui5.goTo({ route: "BooksObjectPage", params: { key: "251" }, componentTargetInfo: undefined });
     expect(page.url()).toContain("#/Books(251)");
     await expect(ui5.control({ controlType: "sap.uxap.ObjectPageLayout" })).toBeUI5Visible();
 

@@ -396,6 +396,7 @@ const BRIDGE_VERSION = "1";
     params: Record<string, unknown> | undefined,
     componentId: string | undefined,
     replace: boolean,
+    componentTargetInfo: Record<string, unknown> | undefined,
     timeout: number
   ): Promise<void> {
     await waitForUI5(timeout);
@@ -434,7 +435,7 @@ const BRIDGE_VERSION = "1";
           (known.length ? ` - routes: ${known.join(", ")}` : "")
       );
     }
-    router.navTo(route, params || {}, undefined, replace);
+    router.navTo(route, params || {}, componentTargetInfo, replace);
   }
 
   async function interact(
@@ -463,6 +464,60 @@ const BRIDGE_VERSION = "1";
       enterText: text,
       clearTextFirst,
     });
+  }
+
+  // ---------------------------------------------------------------------------------------------
+  // requests that are not waited for (wdi5's `ignoreAutoWaitUrls`)
+
+  let ignorePatterns: RegExp[] = [];
+  let requestPatchesInstalled = false;
+
+  function isIgnoredUrl(url: unknown): boolean {
+    const s = String(url);
+    return ignorePatterns.some((re) => {
+      re.lastIndex = 0;
+      return re.test(s);
+    });
+  }
+
+  /**
+   * - XHR: OPA's `_XHRWaiter` skips requests whose `ignored` flag is set when `send()` runs, so our
+   *   `open()` wrapper sets it - regardless of the order in which the wrappers were installed.
+   * - fetch: OPA's `_fetchWaiter` wraps `window.fetch`; ignored URLs bypass it and go to the
+   *   browser's own fetch, saved before UI5 loaded (see the `ui5` fixture).
+   */
+  async function configure(config: { ignoreAutoWaitUrls: Array<{ source: string; flags: string }> }): Promise<void> {
+    await ready;
+    ignorePatterns = config.ignoreAutoWaitUrls.map((p) => new RegExp(p.source, p.flags));
+    if (requestPatchesInstalled || !ignorePatterns.length) return;
+    requestPatchesInstalled = true;
+
+    // Load the waiters first so that our wrappers sit outside of theirs.
+    await requireAsync(["sap/ui/test/autowaiter/_XHRWaiter"]).catch(() => undefined);
+    const fetchWaiter = await requireAsync(["sap/ui/test/autowaiter/_fetchWaiter"]).catch(() => undefined);
+
+    const originalOpen = XMLHttpRequest.prototype.open;
+    XMLHttpRequest.prototype.open = function (this: any, method: string, url: string | URL) {
+      if (isIgnoredUrl(url)) this.ignored = true;
+      // eslint-disable-next-line prefer-rest-params
+      return (originalOpen as any).apply(this, arguments);
+    } as typeof XMLHttpRequest.prototype.open;
+
+    if (fetchWaiter) {
+      const nativeFetch = w.__pwui5NativeFetch;
+      if (typeof nativeFetch !== "function") {
+        console.warn(
+          "playwright-ui5: ignoreAutoWaitUrls only applies to XHR in this frame - the browser's fetch was not saved " +
+            "(use the `ui5` fixture with the ignoreAutoWaitUrls option)"
+        );
+        return;
+      }
+      const waitingFetch = w.fetch;
+      w.fetch = function (this: unknown, resource: any, options?: any) {
+        const url = resource && typeof resource === "object" && "url" in resource ? resource.url : resource;
+        return (isIgnoredUrl(url) ? nativeFetch : waitingFetch).call(window, resource, options);
+      };
+    }
   }
 
   function release(handleIds: string[]) {
@@ -581,6 +636,7 @@ const BRIDGE_VERSION = "1";
     describeTarget,
     chain,
     navTo,
+    configure,
     interact,
     release,
     ser,

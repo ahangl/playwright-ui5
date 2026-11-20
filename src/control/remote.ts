@@ -1,9 +1,15 @@
 import type { Frame, Locator } from "@playwright/test";
 import { callBridge, type ControlDescriptor, type Serialized } from "../bridge/inject";
 import { step, formatArgs } from "../util/step";
-import { chainFrom } from "./chain";
+import { chainAfter, chainFrom } from "./chain";
 
 const REF = Symbol.for("playwright-ui5.ref");
+const CTX = Symbol.for("playwright-ui5.ctx");
+
+/** Frame and timeout of a remote control (internal). */
+export function contextOf(control: UI5Control): RemoteContext {
+  return (control as unknown as Record<symbol, RemoteContext>)[CTX];
+}
 
 /** Context shared by remote controls/objects: the frame they live in and timeouts. */
 export interface RemoteContext {
@@ -63,11 +69,11 @@ type DynamicMethods = { [method: string]: (...args: any[]) => UntypedChain };
 export type UntypedChain = Promise<any> & ControlChainHelpers & DynamicMethods;
 
 /** Helpers of {@link UI5Control} that can be called directly on a control chain. */
-export interface ControlChainHelpers {
-  /** See {@link UI5Control.press}. */
-  press(options?: { native?: boolean }): Promise<void>;
-  /** See {@link UI5Control.enterText}. */
-  enterText(text: string, options?: { clearTextFirst?: boolean }): Promise<void>;
+export interface ControlChainHelpers<T = unknown> {
+  /** See {@link UI5Control.press}. The chain continues on the same control afterwards. */
+  press(options?: { native?: boolean }): ControlChain<T>;
+  /** See {@link UI5Control.enterText}. The chain continues on the same control afterwards. */
+  enterText(text: string, options?: { clearTextFirst?: boolean }): ControlChain<T>;
   /** See {@link UI5Control.exec}. */
   exec<R, A extends unknown[]>(fn: (control: any, ...args: A) => R, ...args: A): Promise<Remote<Awaited<R>>>;
   /** Playwright locator of the control (resolves the chain first). */
@@ -99,7 +105,7 @@ type ChainMembers<N, Self> = 0 extends 1 & N
                   ? DynamicMethods
                   : Promisified<N, {}>;
 
-type ControlChainMembers<T> = ControlChainHelpers & (unknown extends T ? DynamicMethods : Promisified<T, ControlChainHelpers>);
+type ControlChainMembers<T> = ControlChainHelpers<T> & (unknown extends T ? DynamicMethods : Promisified<T, ControlChainHelpers>);
 
 /**
  * The result of a remote method call. Await it to get the value, or keep calling methods of the
@@ -123,7 +129,15 @@ export type ControlsQuery<T = unknown> = Promise<RemoteControl<T>[]>;
  * Pass the UI5 class as type parameter for typed methods: `ui5.control<Button>({...})`
  * (types from `@sapui5/types` / `@openui5/types`).
  */
-export type RemoteControl<T = unknown> = UI5Control & (unknown extends T ? DynamicMethods : Promisified<T, UI5Control>);
+export type RemoteControl<T = unknown> = UI5ControlActions<T> &
+  UI5Control &
+  (unknown extends T ? DynamicMethods : Promisified<T, UI5Control>);
+
+/** Typed versions of {@link UI5Control.press} / {@link UI5Control.enterText}. */
+interface UI5ControlActions<T> {
+  press(options?: { native?: boolean }): ControlChain<T>;
+  enterText(text: string, options?: { clearTextFirst?: boolean }): ControlChain<T>;
+}
 
 /** A non-control UI5 object (binding context, model, ...) living in the browser. */
 export type RemoteObject<T = unknown> = UI5Object & (unknown extends T ? DynamicMethods : Promisified<T, UI5Object>);
@@ -195,6 +209,7 @@ export class UI5Control {
     this.domRefId = descriptor.domRefId;
     this.methods = descriptor.methods;
     Object.defineProperty(this, REF, { value: { id: this.id }, enumerable: false });
+    Object.defineProperty(this, CTX, { value: ctx, enumerable: false });
   }
 
   /** The frame the control lives in. */
@@ -245,9 +260,12 @@ export class UI5Control {
    * Presses the control the way OPA does (`sap/ui/test/actions/Press` via RecordReplay), which
    * picks the right inner DOM element (e.g. the search icon of a SearchField).
    * With `{ native: true }` a real Playwright click on the control's DOM element is done instead.
+   *
+   * Starts right away. Returns a chain on the same control that continues after the press, e.g.
+   * `await button.press().getText()`; awaiting it rejects if the press failed.
    */
-  async press(options: { native?: boolean } = {}): Promise<void> {
-    await step(`ui5: press ${this.className}#${this.id}`, async () => {
+  press(options: { native?: boolean } = {}): ControlChain {
+    const done = step(`ui5: press ${this.className}#${this.id}`, async () => {
       if (options.native) {
         await callBridge(this.ctx.frame, "waitForUI5", [this.ctx.timeout], this.ctx.timeout);
         await this.locator().click();
@@ -255,14 +273,18 @@ export class UI5Control {
         await callBridge(this.ctx.frame, "interact", [this.id, "PRESS", undefined, false, this.ctx.timeout], this.ctx.timeout);
       }
     });
+    return chainAfter(this.ctx, this.id, `${this.className}#${this.id}.press()`, done);
   }
 
   /**
    * Enters text the way OPA does (`EnterText` action: focuses, types, fires change).
    * `clearTextFirst` defaults to true.
+   *
+   * Starts right away. Returns a chain on the same control that continues afterwards, e.g.
+   * `await input.enterText("Poe").getValue()`.
    */
-  async enterText(text: string, options: { clearTextFirst?: boolean } = {}): Promise<void> {
-    await step(`ui5: enter "${text}" into ${this.className}#${this.id}`, async () => {
+  enterText(text: string, options: { clearTextFirst?: boolean } = {}): ControlChain {
+    const done = step(`ui5: enter "${text}" into ${this.className}#${this.id}`, async () => {
       await callBridge(
         this.ctx.frame,
         "interact",
@@ -270,6 +292,7 @@ export class UI5Control {
         this.ctx.timeout
       );
     });
+    return chainAfter(this.ctx, this.id, `${this.className}#${this.id}.enterText(${formatArgs([text])})`, done);
   }
 
   /**
