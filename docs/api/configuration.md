@@ -28,14 +28,14 @@ export default defineConfig<UI5TestOptions>({
 test.use({ ui5Options: { appFrame: "#application-frame" } });
 ```
 
-| Option                    | Default                             | Description                                                                         |
-| ------------------------- | ----------------------------------- | ----------------------------------------------------------------------------------- |
-| `waitForUI5Timeout`       | `15000`                             | Max. ms to wait for UI5 to become idle and for controls to appear.                  |
-| `feTimeout`               | `30000`                             | Max. ms for a single Fiori elements test library (OPA) statement (only `fe`).       |
-| `feWaitAfter`             | `true`                              | `Given` / `When` statements wait until UI5 is idle after their last action.         |
-| `appFrame`                | `"auto"`                            | Which frame runs the app: `"auto"`, `"main"` or a CSS selector of the app `iframe`. |
-| `launchpadIframeSelector` | `DEFAULT_LAUNCHPAD_IFRAME_SELECTOR` | CSS selector that `appFrame: "auto"` uses to find the launchpad app iframe.         |
-| `ignoreAutoWaitUrls`      | `[]`                                | Requests (XHR and `fetch`) that waiting for UI5 ignores.                            |
+| Option                    | Default                               | Description                                                                         |
+| ------------------------- | ------------------------------------- | ----------------------------------------------------------------------------------- |
+| `waitForUI5Timeout`       | `15000`                               | Max. ms to wait for UI5 to become idle and for controls to appear.                  |
+| `feTimeout`               | `30000`                               | Max. ms for a single Fiori elements test library (OPA) statement (only `fe`).       |
+| `feWaitAfter`             | `true`                                | `Given` / `When` statements wait until UI5 is idle after their last action.         |
+| `appFrame`                | `"auto"`                              | Which frame runs the app: `"auto"`, `"main"` or a CSS selector of the app `iframe`. |
+| `launchpadIframeSelector` | [see below](#launchpadiframeselector) | CSS selector that `appFrame: "auto"` uses to find the launchpad app iframe.         |
+| `ignoreAutoWaitUrls`      | `[]`                                  | Requests (XHR and `fetch`) that waiting for UI5 ignores.                            |
 
 ### waitForUI5Timeout
 
@@ -73,7 +73,7 @@ The detected frame is re-checked before each call, so opening an app from the ho
 
 ### launchpadIframeSelector
 
-Only needed for custom hosts. The default (`DEFAULT_LAUNCHPAD_IFRAME_SELECTOR`, exported) is:
+Only needed for custom hosts. The default is:
 
 ```css
 iframe[data-sap-ushell-active="true"], iframe.sapUShellApplicationContainer, iframe[id^="application-"]

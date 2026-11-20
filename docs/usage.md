@@ -4,6 +4,8 @@
 The control API, the assertions and the navigation work in freestyle apps and in Fiori elements V2 and V4 apps, standalone, in a launchpad or in SAP Build Work Zone. Only the [Fiori elements test library](./fe-testlib) needs Fiori elements V4.
 :::
 
+This page explains the concepts. Every method with its signature is in the [API reference](./api/).
+
 ## Files
 
 Tests are ordinary Playwright test files (by default `*.spec.ts` in `testDir`). Import `test` and `expect` from this package:
@@ -22,23 +24,13 @@ test("finds the Go button", async ({ ui5 }) => {
 
 The fixtures are:
 
-- `ui5`: the control API for the app frame ([`UI5`](#control-retrieval)).
+- `ui5`: the control API for the app frame ([reference](./api/ui5)).
 - `fe`: the [Fiori elements test library](./fe-testlib) (Fiori elements V4 apps only).
 - All of Playwright's fixtures (`page`, `context`, ...) are still available.
 
-## Control retrieval
+## Finding controls
 
-| Method                                                  | Description                                                                                                                   |
-| ------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------- |
-| `ui5.control<T>(selector, { timeout })`                 | Waits for a matching control. Await it to get a `RemoteControl`, or [chain](#fluent-api) its methods. Fails if none is found. |
-| `ui5.controlOrNull(selector)`                           | Like `control`, but returns `null` when nothing matches.                                                                      |
-| `ui5.controls(selector)`                                | All controls that match now (no waiting for matches). Use `toHaveUI5Count(n)` to wait for a number of matches.                |
-| `ui5.locator(selector)`                                 | A Playwright `Locator` for the control's DOM element.                                                                         |
-| `ui5.press(selector)` / `ui5.enterText(selector, text)` | Shortcuts for the control's `press()` / `enterText()`.                                                                        |
-
-Every call first waits until UI5 is idle (no pending requests, timeouts, rendering or busy indicators). The selector format is described in [Locators](./locators).
-
-`ui5.locator()` returns a `Promise<Locator>`, because it first finds the control. Await it: `const go = await ui5.locator(GO_BUTTON)`. Without `await`, Playwright reports confusing errors such as `go.click is not a function` or "expected a Locator".
+A control is found by a selector, the same format as wdi5 and OPA (see [Locators](./locators)):
 
 ```ts
 import type Button from "sap/m/Button";
@@ -48,11 +40,20 @@ const rows = await ui5.controls({ controlType: "sap.m.ColumnListItem" });
 const dialog = await ui5.controlOrNull({ controlType: "sap.m.Dialog" }, { timeout: 2_000 });
 ```
 
-## API methods
+- `ui5.control()` waits until a control matches and fails if none does.
+- `ui5.controlOrNull()` returns `null` instead of failing.
+- `ui5.controls()` returns all controls that match now. It doesn't wait for matches. Use [`toHaveUI5Count(n)`](./api/expect#tohaveui5count) to wait for a number of matches.
+- `ui5.locator()` gives a Playwright `Locator` for the control's DOM element.
+
+Every call first waits until UI5 is idle (no pending requests, timeouts, rendering or busy indicators).
+
+`ui5.locator()` returns a `Promise<Locator>`, because it first finds the control. Await it: `const go = await ui5.locator(GO_BUTTON)`. Without `await`, Playwright reports confusing errors such as `go.click is not a function` or "expected a Locator".
+
+All methods: [ui5 reference](./api/ui5#finding-controls).
+
+## RemoteControl
 
 A `RemoteControl` represents a control in the browser. It is looked up by its id on every call, so it stays valid across re-rendering.
-
-### Control methods
 
 Every public method of the control is available and returns a promise:
 
@@ -72,17 +73,7 @@ await context.getProperty("title");
 
 Pass the UI5 class as a type parameter for typed methods: `ui5.control<Input>({...})` with `import type Input from "sap/m/Input"` (needs `@sapui5/types`).
 
-### Helpers
-
-| Member                              | Description                                                         |
-| ----------------------------------- | ------------------------------------------------------------------- |
-| `id`, `className`, `methods`        | Global id, UI5 class name, names of the public methods.             |
-| `getProperty(name)`                 | A property value.                                                   |
-| `getAggregation(name)`              | An aggregation as `RemoteControl` / `RemoteControl[]`.              |
-| `getBindingContextPath(modelName?)` | The path of the binding context, e.g. `"/Books(201)"`.              |
-| `locator()`                         | A Playwright `Locator` for the control's DOM element.               |
-| `exec(fn, ...args)`                 | Runs a function in the browser with the control as first parameter. |
-| `reload()`                          | Re-reads id, class and DOM reference, e.g. after re-rendering.      |
+Besides the control's own methods, a `RemoteControl` has helpers such as `id`, `className`, `methods`, `getProperty()`, `getBindingContextPath()` and `locator()`. All of them: [RemoteControl reference](./api/remote-control).
 
 ### press and enterText
 
@@ -133,15 +124,6 @@ await ui5.control(GO_BUTTON).press().getText();
 - They support `.not` and `{ timeout }`.
 - The failure message shows the control, the expected value and the last value read.
 
-| Matcher                                      | Passes when                                                                        |
-| -------------------------------------------- | ---------------------------------------------------------------------------------- |
-| `toHaveUI5Property(name, value)`             | the property equals `value` (deep equality; a RegExp matches strings)              |
-| `toHaveUI5Text(text \| RegExp)`              | the `text` property matches                                                        |
-| `toBeUI5Enabled()`                           | `enabled` is `true`                                                                |
-| `toBeUI5Visible()`                           | the control is rendered, `visible` is not `false`, and its DOM element is laid out |
-| `toHaveUI5BindingPath(path, { modelName? })` | the path of the binding context matches                                            |
-| `toHaveUI5Count(n)`                          | `ui5.controls(selector)` finds `n` controls                                        |
-
 ```ts
 await expect(ui5.control(GO_BUTTON)).toBeUI5Enabled();
 await expect(ui5.control(TABLE).getItems(0)).toHaveUI5BindingPath("/Books(201)");
@@ -153,20 +135,21 @@ Pass the chain itself (without `await`) to get the retrying behaviour. `expect(a
 
 Playwright's own matchers work on locators: `await expect(await ui5.locator(GO_BUTTON)).toBeVisible()`.
 
+All matchers: [Assertions reference](./api/expect).
+
 ## Navigation
 
-| Call                                                                         | Description                                                                                            |
-| ---------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------ |
-| `ui5.goTo("/path")`                                                          | `page.goto` (relative to `baseURL`), then waits for UI5.                                               |
-| `ui5.goTo("#Intent-action")` / `ui5.goTo("#/Books(1)")`                      | Changes only the hash of the current page (or of `baseURL`). In a launchpad this is intent navigation. |
-| `ui5.goTo({ route, params?, componentId?, replace?, componentTargetInfo? })` | Navigates with the app's router (`getRouter().navTo`), without reloading.                              |
-| `ui5.waitForUI5()`                                                           | Waits until UI5 is idle.                                                                               |
+`ui5.goTo()` navigates and then waits for UI5. It takes a path (relative to `baseURL`), a hash (intent navigation in a launchpad) or a route of the app's router:
 
 ```ts
+await ui5.goTo("/index.html");
+await ui5.goTo("#Books-display");
 await ui5.goTo({ route: "BooksObjectPage", params: { key: "251" } });
 ```
 
-Without `componentId`, the router of the only application component is used.
+Navigating with the router doesn't reload the page. Without `componentId`, the router of the only application component is used. Details: [`ui5.goTo()`](./api/ui5#ui5-goto).
+
+`ui5.waitForUI5()` waits until UI5 is idle. It is rarely needed, because every call waits already. Use it before plain Playwright code that reads the page.
 
 ## Launchpad and Work Zone shell
 

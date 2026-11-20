@@ -220,7 +220,7 @@ test("opens a book", async ({ ui5, fe }) => {
 - `new ListReport(definition)` becomes `{ ListReport: definition }`, with the same `appId`, `componentId`, `contextPath` / `entitySet`.
 - Await every statement. Chains with `.and` still work.
 - Custom page extensions (the second argument of `new ListReport(definition, extension)`) aren't supported. Move them into a page class as shown in [Page objects](#page-objects).
-- The functions themselves are SAP's, see [Available functions](./fe-testlib#available-functions).
+- The functions themselves are SAP's, see the [`fe` reference](./api/fe#functions).
 
 ## Starting the app
 

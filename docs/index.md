@@ -26,7 +26,7 @@ features:
     link: /usage#assertions
   - title: Fiori elements V4 test library
     details: Run SAP's official sap.fe.test page objects (ListReport, ObjectPage, Shell) with typed Given/When/Then chains. See which functions are available.
-    link: /fe-testlib#available-functions
+    link: /api/fe#functions
   - title: SAP Build Work Zone
     details: The app iframe is detected automatically. Log in once with SAP IAS and reuse the session with Playwright's storageState.
     link: /authentication
@@ -72,4 +72,4 @@ In a Fiori elements V4 app with custom parts (custom sections, columns, actions 
 
 ## For AI agents
 
-This documentation is also available as plain text: [`llms.txt`](./llms.txt){target="_self"} (index) and [`llms-full.txt`](./llms-full.txt){target="_self"} (all pages in one file). Every page is also available as Markdown by adding `.md` to its URL.
+This documentation is also available as plain text: [`llms.txt`](./llms.txt){target="_self"} (index) and [`llms-full.txt`](./llms-full.txt){target="_self"} (all pages in one file). Every page is also available as Markdown by adding `.md` to its URL. The [API reference](./api/) lists every export with its signature.

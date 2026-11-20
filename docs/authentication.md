@@ -69,13 +69,7 @@ setup("log in", async ({ page, baseURL }) => {
 
 ### login options
 
-| Option             | Default                | Description                                                   |
-| ------------------ | ---------------------- | ------------------------------------------------------------- |
-| `url`              |                        | The Work Zone site or application to log in to.               |
-| `provider`         | `ias()`                | The `AuthProvider` that performs the login.                   |
-| `credentials`      | `credentialsFromEnv()` | `{ username, password }`.                                     |
-| `timeout`          | `60000`                | Max. ms for the whole login.                                  |
-| `storageStatePath` |                        | Where to save cookies and local storage. Omit to only log in. |
+`login()` takes `url`, `provider` (default `ias()`), `credentials` (default `credentialsFromEnv()`), `timeout` (default 60 s) and `storageStatePath`. Details: [`login()` reference](./api/auth#login).
 
 ### SAP Cloud Identity Services (IAS)
 
@@ -87,19 +81,11 @@ setup("log in", async ({ page, baseURL }) => {
 - Failing fast with the IdP's error message when credentials are wrong.
 - An existing valid session: then it does nothing.
 
-| Option                  | Default                  | Description                                                                       |
-| ----------------------- | ------------------------ | --------------------------------------------------------------------------------- |
-| `idpDomain`             |                          | IdP to pick on the XSUAA selection page, e.g. `"mytenant.accounts.ondemand.com"`. |
-| `usernameSelector`      | `#j_username`            | Username field.                                                                   |
-| `passwordSelector`      | `#j_password`            | Password field.                                                                   |
-| `submitSelector`        | `#logOnFormSubmit`       | Submit button.                                                                    |
-| `errorSelector`         | IAS error elements       | Elements whose text is reported when the login fails.                             |
-| `skipPasswordlessSetup` | `true`                   | Skip the "set up passwordless / biometric authentication" prompt.                 |
-| `isLoggedIn`            | back on the app's origin | `(page, ctx) => boolean \| Promise<boolean>`: decides when the login is complete. |
+Its options (`idpDomain`, the selectors, `skipPasswordlessSetup`, `isLoggedIn`) are listed in the [`ias()` reference](./api/auth#ias).
 
 ### Custom IdP
 
-Implement the `AuthProvider` interface:
+Implement the [`AuthProvider`](./api/auth#authprovider) interface:
 
 ```ts
 import type { AuthProvider } from "@ahangl/playwright-ui5";

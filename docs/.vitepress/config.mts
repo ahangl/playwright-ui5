@@ -15,7 +15,8 @@ export default defineConfig({
   },
   themeConfig: {
     nav: [
-      { text: "Guide", link: "/installation" },
+      { text: "Guide", link: "/installation", activeMatch: "^/(?!api/)" },
+      { text: "Reference", link: "/api/", activeMatch: "^/api/" },
       { text: "llms.txt", link: `${base}llms.txt`, target: "_self" },
       { text: "npm", link: "https://www.npmjs.com/package/@ahangl/playwright-ui5" }
     ],
@@ -32,7 +33,6 @@ export default defineConfig({
       {
         text: "Guide",
         items: [
-          { text: "Configuration", link: "/configuration" },
           { text: "Running and debugging", link: "/running" },
           { text: "Usage", link: "/usage" },
           { text: "Locators", link: "/locators" },
@@ -42,6 +42,18 @@ export default defineConfig({
       {
         text: "Fiori elements V4",
         items: [{ text: "Test library (sap.fe.test)", link: "/fe-testlib" }]
+      },
+      {
+        text: "Reference",
+        items: [
+          { text: "API reference", link: "/api/" },
+          { text: "fe", link: "/api/fe" },
+          { text: "ui5", link: "/api/ui5" },
+          { text: "RemoteControl", link: "/api/remote-control" },
+          { text: "expect", link: "/api/expect" },
+          { text: "Authentication", link: "/api/auth" },
+          { text: "Configuration", link: "/api/configuration" }
+        ]
       },
       {
         text: "More",

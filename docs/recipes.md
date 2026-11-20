@@ -15,7 +15,7 @@ export default defineConfig<UI5TestOptions>({
 });
 ```
 
-Strings are regular expression sources. See [Configuration](./configuration#ignoreautowaiturls).
+Strings are regular expression sources. See [Configuration](./api/configuration#ignoreautowaiturls).
 
 ## Navigate in SAP Build Work Zone
 

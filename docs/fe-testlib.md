@@ -7,7 +7,7 @@ The `fe` fixture works only in apps built with the Fiori elements V4 templates (
 The `fe` fixture runs SAP's official test library for Fiori elements V4 apps ([`sap.fe.test`](https://ui5.sap.com/#/api/sap.fe.test)) from Playwright tests. It is the counterpart of wdi5's "Test Library Integration".
 
 ::: tip Which functions are there?
-The functions (`iChangeFilterField`, `iCheckRows`, `iPressRow`, ...) are SAP's, not this library's. They are documented in the UI5 API reference under [**`sap.fe.test`**](https://ui5.sap.com/#/api/sap.fe.test). The [overview below](#available-functions) shows which reference page belongs to which part of a statement.
+The functions (`iChangeFilterField`, `iCheckRows`, `iPressRow`, ...) are SAP's, not this library's. They are documented in the UI5 API reference under [**`sap.fe.test`**](https://ui5.sap.com/#/api/sap.fe.test). The [`fe` reference](./api/fe#functions) shows which SAP reference page belongs to which part of a statement.
 :::
 
 ## Why use the test library?
@@ -47,16 +47,7 @@ test("list report to object page", async ({ ui5, fe }) => {
 
 ### Page configuration
 
-| Page            | Config                                                             |
-| --------------- | ------------------------------------------------------------------ |
-| List report     | `{ ListReport: { appId, componentId, contextPath?, entitySet? } }` |
-| Object page     | `{ ObjectPage: { appId, componentId, contextPath?, entitySet? } }` |
-| Launchpad shell | `{ Shell: {} }`                                                    |
-
-- `appId` is `sap.app.id` from the manifest.
-- `componentId` is the id of the routing target (`sap.ui5/routing/targets/<target>/id`).
-- `contextPath` (e.g. `"/Books"`) or `entitySet` (e.g. `"Books"`) identifies the entity of the page, as in the target's `settings`.
-- The page names (`onTheMainPage`, ...) are yours. They become the properties of `Given` / `When` / `Then`.
+Each page is `{ ListReport | ObjectPage | Shell: settings }`. `appId` is `sap.app.id` from the manifest, `componentId` the id of the routing target, and `contextPath` or `entitySet` the entity of the page. The page names (`onTheMainPage`, ...) are yours. All fields: [Page configuration](./api/fe#page-configuration).
 
 ## Calling test functions
 
@@ -64,7 +55,7 @@ test("list report to object page", async ({ ui5, fe }) => {
 
 - Each statement is recorded and only runs when you `await` it. Await every statement.
 - Statements can be chained with `.and`, as in OPA.
-- A `When` statement waits until UI5 is idle after its last action (so does `Given`). After `await When.onTheDetailPage.onFooter().iExecuteSave()` the object is saved, and the next step, also a Playwright locator, sees the result. `{ waitAfter: false }` or [`ui5Options.feWaitAfter`](./configuration#fewaitafter) turns it off.
+- A `When` statement waits until UI5 is idle after its last action (so does `Given`). After `await When.onTheDetailPage.onFooter().iExecuteSave()` the object is saved, and the next step, also a Playwright locator, sees the result. `{ waitAfter: false }` or [`ui5Options.feWaitAfter`](./api/configuration#fewaitafter) turns it off.
 - A failing statement throws an error. The message contains the statement, OPA's diagnostics and the last checks that passed, and it points at your test line.
 - Each statement appears as a step in the Playwright report and trace.
 - The timeout per statement is `ui5Options.feTimeout` (default 30 s).
@@ -85,40 +76,7 @@ await When.onTheMainPage.onTable().iPressRow({ "Book ID": "251" });
 The fastest way to find a function:
 
 1. **Editor:** install `@sapui5/types`. The chains are then typed from SAP's typings, and autocompletion after `onTable().` lists every function with its documentation.
-2. **API reference:** use the table below, or browse [`sap.fe.test`](https://ui5.sap.com/#/api/sap.fe.test) and its [`api`](https://ui5.sap.com/#/api/sap.fe.test.api) namespace.
-
-### List report (`ListReport`)
-
-| Area              | `When` (actions)                                                                 | `Then` (assertions)                                                                    |
-| ----------------- | -------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------- |
-| page itself       | [`ListReport.actions`](https://ui5.sap.com/#/api/sap.fe.test.ListReport.actions) | [`ListReport.assertions`](https://ui5.sap.com/#/api/sap.fe.test.ListReport.assertions) |
-| `onFilterBar()`   | [`FilterBarActions`](https://ui5.sap.com/#/api/sap.fe.test.api.FilterBarActions) | [`FilterBarAssertions`](https://ui5.sap.com/#/api/sap.fe.test.api.FilterBarAssertions) |
-| `onTable(table?)` | [`TableActions`](https://ui5.sap.com/#/api/sap.fe.test.api.TableActions)         | [`TableAssertions`](https://ui5.sap.com/#/api/sap.fe.test.api.TableAssertions)         |
-| `onHeader()`      | [`HeaderActionsLR`](https://ui5.sap.com/#/api/sap.fe.test.api.HeaderActionsLR)   | [`HeaderAssertionsLR`](https://ui5.sap.com/#/api/sap.fe.test.api.HeaderAssertionsLR)   |
-
-### Object page (`ObjectPage`)
-
-| Area                     | `When` (actions)                                                                 | `Then` (assertions)                                                                    |
-| ------------------------ | -------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------- |
-| page itself              | [`ObjectPage.actions`](https://ui5.sap.com/#/api/sap.fe.test.ObjectPage.actions) | [`ObjectPage.assertions`](https://ui5.sap.com/#/api/sap.fe.test.ObjectPage.assertions) |
-| `onHeader()`             | [`HeaderActions`](https://ui5.sap.com/#/api/sap.fe.test.api.HeaderActions)       | [`HeaderAssertions`](https://ui5.sap.com/#/api/sap.fe.test.api.HeaderAssertions)       |
-| `onForm(form)`           | [`FormActions`](https://ui5.sap.com/#/api/sap.fe.test.api.FormActions)           | [`FormAssertions`](https://ui5.sap.com/#/api/sap.fe.test.api.FormAssertions)           |
-| `onTable(table?)`        | [`TableActions`](https://ui5.sap.com/#/api/sap.fe.test.api.TableActions)         | [`TableAssertions`](https://ui5.sap.com/#/api/sap.fe.test.api.TableAssertions)         |
-| `onFooter()`             | [`FooterActionsOP`](https://ui5.sap.com/#/api/sap.fe.test.api.FooterActionsOP)   | [`FooterAssertionsOP`](https://ui5.sap.com/#/api/sap.fe.test.api.FooterAssertionsOP)   |
-| `onFilterBar(filterBar)` | [`FilterBarActions`](https://ui5.sap.com/#/api/sap.fe.test.api.FilterBarActions) | [`FilterBarAssertions`](https://ui5.sap.com/#/api/sap.fe.test.api.FilterBarAssertions) |
-
-### Dialogs (both page types)
-
-| Area                                                                                | `When` (actions)                                                                             | `Then` (assertions)                                                                                |
-| ----------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------- |
-| `onDialog(dialog)`, `onActionDialog()`, `onConfirmationDialog()`, `onErrorDialog()` | [`DialogActions`](https://ui5.sap.com/#/api/sap.fe.test.api.DialogActions)                   | [`DialogAssertions`](https://ui5.sap.com/#/api/sap.fe.test.api.DialogAssertions)                   |
-| `onCreateDialog()`                                                                  | [`DialogCreateActions`](https://ui5.sap.com/#/api/sap.fe.test.api.DialogCreateActions)       | [`DialogCreateAssertions`](https://ui5.sap.com/#/api/sap.fe.test.api.DialogCreateAssertions)       |
-| `onMessageDialog()`                                                                 | [`DialogMessageActions`](https://ui5.sap.com/#/api/sap.fe.test.api.DialogMessageActions)     | [`DialogMessageAssertions`](https://ui5.sap.com/#/api/sap.fe.test.api.DialogMessageAssertions)     |
-| `onValueHelpDialog()`                                                               | [`DialogValueHelpActions`](https://ui5.sap.com/#/api/sap.fe.test.api.DialogValueHelpActions) | [`DialogValueHelpAssertions`](https://ui5.sap.com/#/api/sap.fe.test.api.DialogValueHelpAssertions) |
-
-### Launchpad (`Shell`)
-
-[`sap.fe.test.Shell`](https://ui5.sap.com/#/api/sap.fe.test.Shell): `iNavigateHome()`, `iNavigateBack()`, `iNavigateViaMenu()`, `iOpenNavigationMenu()`, `iPressTile()`, `iCheckIntentBasedNavigation()`. Use them on `When` / `Then` like the other pages. In SAP Build Work Zone some of them don't work, see [below](#sap-build-work-zone).
+2. **API reference:** the [tables in the `fe` reference](./api/fe#functions) link each area to its SAP reference page. Or browse [`sap.fe.test`](https://ui5.sap.com/#/api/sap.fe.test) and its [`api`](https://ui5.sap.com/#/api/sap.fe.test.api) namespace.
 
 ### Frequently used
 

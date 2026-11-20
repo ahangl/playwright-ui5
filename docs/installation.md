@@ -23,7 +23,7 @@ Any version of `@sapui5/types` works. It doesn't have to match the UI5 version y
 
 ## Configure Playwright
 
-Point `baseURL` at your app. Add `ui5Options` only where you need to change the defaults (see [Configuration](./configuration)).
+Point `baseURL` at your app. Add `ui5Options` only where you need to change the defaults (see [Configuration](./api/configuration)).
 
 ```ts
 // playwright.config.ts
@@ -99,7 +99,7 @@ test("open a book", async ({ ui5, fe }) => {
 
 Run it with `npx playwright test`. See [Running and debugging](./running).
 
-The Fiori elements functions (`iChangeFilterField`, `iCheckRows`, ...) come from SAP's `sap.fe.test` library. See [Available functions](./fe-testlib#available-functions) for where to find them.
+The Fiori elements functions (`iChangeFilterField`, `iCheckRows`, ...) come from SAP's `sap.fe.test` library. The [`fe` reference](./api/fe#functions) links each part of a statement to its SAP reference page.
 
 ## TypeScript
 
