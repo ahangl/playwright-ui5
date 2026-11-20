@@ -34,7 +34,7 @@
     "dist"
   ],
   "engines": {
-    "node": ">=18"
+    "node": ">=22"
   },
   "scripts": {
     "build": "tsup && node scripts/mark-optional-types.mjs",
@@ -52,25 +52,26 @@
     "prepublishOnly": "npm run lint && npm run format && npm run typecheck"
   },
   "peerDependencies": {
-    "@playwright/test": ">=1.40.0",
+    "@playwright/test": ">=1.60.0",
     "@sapui5/types": ">=1.120.0"
   },
   "devDependencies": {
-    "@changesets/cli": "^3.0.3",
-    "@eslint/js": "^10.0.1",
-    "@playwright/test": "^1.65.1",
-    "@sap-ux/ui5-middleware-fe-mockserver": "^2.4.19",
-    "@sapui5/types": "~1.154.0",
-    "@types/node": "^22.0.0",
-    "@ui5/cli": "^4.1.0",
-    "dotenv": "^16.4.0",
-    "eslint": "^10.15.0",
-    "eslint-config-prettier": "^10.1.8",
-    "globals": "^17.14.0",
-    "prettier": "^3.10.1",
-    "tsup": "^8.5.1",
-    "typescript": "~5.9.3",
-    "typescript-eslint": "^8.73.0"
+    "@changesets/cli": "3.0.3",
+    "@eslint/js": "10.0.1",
+    "@playwright/test": "1.65.1",
+    "@sap-ux/ui5-middleware-fe-mockserver": "2.4.19",
+    "@sapui5/types": "1.154.0",
+    "@types/node": "22.20.5",
+    "@ui5/cli": "4.0.73",
+    "dotenv": "18.0.10",
+    "esbuild": "0.28.2",
+    "eslint": "10.15.0",
+    "eslint-config-prettier": "10.1.8",
+    "globals": "17.14.0",
+    "prettier": "3.10.1",
+    "tsup": "9.0.0",
+    "typescript": "6.0.3",
+    "typescript-eslint": "8.72.2"
   },
   "peerDependenciesMeta": {
     "@sapui5/types": {

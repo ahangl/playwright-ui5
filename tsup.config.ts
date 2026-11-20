@@ -37,7 +37,7 @@ export default defineConfig({
   dts: true,
   sourcemap: true,
   clean: true,
-  target: "node18",
+  target: "node22",
   external: ["@playwright/test"],
   esbuildPlugins: [bridgeSourcePlugin]
 });

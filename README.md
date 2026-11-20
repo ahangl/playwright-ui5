@@ -17,6 +17,8 @@ npm i -D @ahangl/playwright-ui5 @playwright/test
 npm i -D @sapui5/types
 ```
 
+Requires Node 22 or later and `@playwright/test` 1.60 or later.
+
 ## Quick start
 
 ```ts

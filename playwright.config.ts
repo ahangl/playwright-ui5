@@ -1,6 +1,9 @@
-import "dotenv/config";
+import dotenv from "dotenv";
 import { defineConfig, devices } from "@playwright/test";
 import type { UI5TestOptions } from "@ahangl/playwright-ui5";
+
+// dotenv 17+ logs every load by default. Keep the test output quiet.
+dotenv.config({ quiet: true });
 
 const WORKZONE_URL = process.env.WORKZONE_URL;
 const FIXTURE_URL = "http://localhost:8080";
