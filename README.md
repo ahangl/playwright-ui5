@@ -135,6 +135,7 @@ await ui5.control(GO_BUTTON).press();
 - Actions can be part of a chain: `await ui5.control(GO_BUTTON).press().getText()`. The chain continues on the same control after the action. If the action fails, the chain rejects and the later steps don't run.
 - **Chains are lazy.** They only run when awaited, and the result is cached for that chain object. A forgotten `await` does nothing, so enable the ESLint rule [`@typescript-eslint/no-floating-promises`](https://typescript-eslint.io/rules/no-floating-promises/). `press()` and `enterText()` always run.
 - `const table = await ui5.control(...)` still returns the `RemoteControl`, so tests can await each step as well.
+- Every awaited chain, `ui5.controls()` query, `exec` and action appears as one step in the Playwright report and trace, titled like the call and located at your test line, e.g. `ui5.control({"controlType":"sap.m.Table"}).getItems(0).getBindingContextPath()`. A failing chain is marked as a failed step. The retrying `expect` matchers show only the matcher step, not each attempt. Calls on `ui5.shell` are labeled `ui5.shell.…`.
 
 ## Assertions
 

@@ -245,14 +245,17 @@ export class UI5Control {
   }
 
   /** Path of the control's binding context (`getBindingContext(model).getPath()`). */
-  async getBindingContextPath(modelName?: string): Promise<string | undefined> {
-    return this.ctx.frame.evaluate(
-      ({ id, modelName }) => {
-        const ctl = (window as any).__pwui5.byId(id);
-        const bc = ctl && ctl.getBindingContext(modelName);
-        return bc ? (bc.getPath() as string) : undefined;
-      },
-      { id: this.id, modelName }
+  getBindingContextPath(modelName?: string): Promise<string | undefined> {
+    const args = modelName === undefined ? [] : [modelName];
+    return step(`${this.className}#${this.id}.getBindingContextPath(${formatArgs(args)})`, () =>
+      this.ctx.frame.evaluate(
+        ({ id, modelName }) => {
+          const ctl = (window as any).__pwui5.byId(id);
+          const bc = ctl && ctl.getBindingContext(modelName);
+          return bc ? (bc.getPath() as string) : undefined;
+        },
+        { id: this.id, modelName }
+      )
     );
   }
 
@@ -273,7 +276,7 @@ export class UI5Control {
         await callBridge(this.ctx.frame, "interact", [this.id, "PRESS", undefined, false, this.ctx.timeout], this.ctx.timeout);
       }
     });
-    return chainAfter(this.ctx, this.id, `${this.className}#${this.id}.press()`, done);
+    return chainAfter(this, `${this.className}#${this.id}.press()`, done);
   }
 
   /**
@@ -292,7 +295,7 @@ export class UI5Control {
         this.ctx.timeout
       );
     });
-    return chainAfter(this.ctx, this.id, `${this.className}#${this.id}.enterText(${formatArgs([text])})`, done);
+    return chainAfter(this, `${this.className}#${this.id}.enterText(${formatArgs([text])})`, done);
   }
 
   /**
@@ -300,16 +303,20 @@ export class UI5Control {
    * serialized, so it cannot use variables from the test scope - pass them as arguments.
    * Return values are transferred like method results (controls become remote controls).
    */
-  async exec<R, A extends unknown[]>(fn: (control: any, ...args: A) => R, ...args: A): Promise<Remote<Awaited<R>>> {
-    await callBridge(this.ctx.frame, "waitForUI5", [this.ctx.timeout], this.ctx.timeout);
-    const result = await this.ctx.frame.evaluate(execExpression(fn, [{ __pwui5ref: { id: this.id } }, ...args]));
-    return fromBrowser(result as Serialized, this.ctx) as Remote<Awaited<R>>;
+  exec<R, A extends unknown[]>(fn: (control: any, ...args: A) => R, ...args: A): Promise<Remote<Awaited<R>>> {
+    return step(`${this.className}#${this.id}.exec(${formatArgs([fn, ...args])})`, async () => {
+      await callBridge(this.ctx.frame, "waitForUI5", [this.ctx.timeout], this.ctx.timeout);
+      const result = await this.ctx.frame.evaluate(execExpression(fn, [{ __pwui5ref: { id: this.id } }, ...args]));
+      return fromBrowser(result as Serialized, this.ctx) as Remote<Awaited<R>>;
+    });
   }
 
   /** Re-reads id/className/DOM ref (e.g. after re-rendering) and returns a fresh instance. */
-  async reload(): Promise<RemoteControl> {
-    const d = await callBridge<ControlDescriptor>(this.ctx.frame, "describeTarget", [{ id: this.id }], this.ctx.timeout);
-    return createRemoteControl(this.ctx, d);
+  reload(): Promise<RemoteControl> {
+    return step(`${this.className}#${this.id}.reload()`, async () => {
+      const d = await callBridge<ControlDescriptor>(this.ctx.frame, "describeTarget", [{ id: this.id }], this.ctx.timeout);
+      return createRemoteControl(this.ctx, d);
+    });
   }
 
   toString(): string {

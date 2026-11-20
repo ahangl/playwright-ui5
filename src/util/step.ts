@@ -1,3 +1,4 @@
+import { AsyncLocalStorage } from "node:async_hooks";
 import { test, type Location } from "@playwright/test";
 
 /** Parses a V8 stack frame line: `at fn (file:1:2)`, `at file:1:2`, `at async fn (file:1:2)`. */
@@ -66,12 +67,32 @@ export async function step<T>(title: string, body: () => Promise<T>, site?: Erro
   } catch {
     insideTest = false;
   }
-  if (!insideTest) return body();
+  if (!insideTest || stepsDisabled()) return body();
   // Not `box: true`: Playwright would replace error stacks with the stack at this call, which is
   // inside this library. Instead the step gets the caller's location and our errors carry cleaned
   // stacks (see cleanStack) that point at the user's code.
   const location = callerLocation(site ?? new Error());
-  return test.step(title, body, location ? { location } : {});
+  return test.step(shortTitle(title), body, location ? { location } : {});
+}
+
+const MAX_TITLE = 150;
+
+function shortTitle(title: string): string {
+  return title.length > MAX_TITLE ? title.slice(0, MAX_TITLE - 1) + "…" : title;
+}
+
+const quiet = new AsyncLocalStorage<boolean>();
+
+/**
+ * Runs `fn` without creating steps for the library calls inside it, e.g. for the attempts of a
+ * retrying matcher or for the lookup that belongs to an action that already has its own step.
+ */
+export function withoutSteps<T>(fn: () => T): T {
+  return quiet.run(true, fn);
+}
+
+export function stepsDisabled(): boolean {
+  return quiet.getStore() === true;
 }
 
 export function formatArgs(args: unknown[]): string {

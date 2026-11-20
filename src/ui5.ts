@@ -15,7 +15,7 @@ import {
 } from "./control/remote";
 import { createChain, createControlsQuery, describeSelector } from "./control/chain";
 import type { UI5Selector } from "./control/selector";
-import { cleanStack, step } from "./util/step";
+import { cleanStack, formatArgs, step, withoutSteps } from "./util/step";
 
 /** Router navigation target for {@link UI5.goTo}, like wdi5's `goTo({ oRoute })`. */
 export interface UI5Route {
@@ -44,10 +44,14 @@ export class UI5 {
   readonly options: ResolvedUI5Options;
   private cachedFrame: Frame | undefined;
 
+  /**
+   * @param label Prefix of step titles and error messages (internal: `"ui5.shell"` for {@link shell}).
+   */
   constructor(
     readonly page: Page,
     options: UI5Options = {},
-    private readonly baseURL?: string
+    private readonly baseURL?: string,
+    private readonly label = "ui5"
   ) {
     this.options = resolveOptions(options);
     if (this.options.ignoreAutoWaitUrls.length) {
@@ -85,7 +89,7 @@ export class UI5 {
    * await ui5.shell.control({ id: "userActionsMenuHeaderButton" }).press();
    */
   get shell(): UI5 {
-    return (this.shellUI5 ??= new UI5(this.page, { ...this.options, appFrame: "main" }, this.baseURL));
+    return (this.shellUI5 ??= new UI5(this.page, { ...this.options, appFrame: "main" }, this.baseURL, `${this.label}.shell`));
   }
 
   /** Forget the resolved app frame, e.g. after navigating to another app. */
@@ -101,15 +105,19 @@ export class UI5 {
   // general
 
   /** Waits until UI5 has no pending work (requests, timeouts, rendering, busy indicators). */
-  async waitForUI5(options: { timeout?: number } = {}): Promise<void> {
-    const { frame, timeout } = await this.ctx(options.timeout);
-    await callBridge(frame, "waitForUI5", [timeout], timeout);
+  waitForUI5(options: { timeout?: number } = {}): Promise<void> {
+    return step(`${this.label}.waitForUI5()`, async () => {
+      const { frame, timeout } = await this.ctx(options.timeout);
+      await callBridge(frame, "waitForUI5", [timeout], timeout);
+    });
   }
 
   /** UI5 version of the application frame. */
-  async version(): Promise<string> {
-    const { frame, timeout } = await this.ctx();
-    return callBridge<string>(frame, "version", [], timeout);
+  version(): Promise<string> {
+    return step(`${this.label}.version()`, async () => {
+      const { frame, timeout } = await this.ctx();
+      return callBridge<string>(frame, "version", [], timeout);
+    });
   }
 
   /**
@@ -125,7 +133,7 @@ export class UI5 {
       await step(`ui5: go to route ${route}${params ? " " + JSON.stringify(params) : ""}`, async () => {
         const { frame, timeout } = await this.ctx(options.timeout);
         await callBridge(frame, "navTo", [route, params, componentId, !!replace, componentTargetInfo, timeout], timeout);
-        await this.waitForUI5(options);
+        await withoutSteps(() => this.waitForUI5(options));
       });
       return;
     }
@@ -139,7 +147,7 @@ export class UI5 {
       }
       await this.page.goto(url);
       this.resetFrame();
-      await this.waitForUI5(options);
+      await withoutSteps(() => this.waitForUI5(options));
     });
   }
 
@@ -147,11 +155,13 @@ export class UI5 {
    * Runs a function inside the app frame after UI5 is idle. The function is serialized, so pass
    * test-scope values as arguments. UI5 controls returned are converted to remote controls.
    */
-  async exec<R, A extends unknown[]>(fn: (...args: A) => R, ...args: A): Promise<Remote<Awaited<R>>> {
-    const ctx = await this.ctx();
-    await callBridge(ctx.frame, "waitForUI5", [ctx.timeout], ctx.timeout);
-    const result = await ctx.frame.evaluate(execExpression(fn as (...a: any[]) => unknown, args));
-    return fromBrowser(result as Serialized, ctx) as Remote<Awaited<R>>;
+  exec<R, A extends unknown[]>(fn: (...args: A) => R, ...args: A): Promise<Remote<Awaited<R>>> {
+    return step(`${this.label}.exec(${formatArgs([fn, ...args])})`, async () => {
+      const ctx = await this.ctx();
+      await callBridge(ctx.frame, "waitForUI5", [ctx.timeout], ctx.timeout);
+      const result = await ctx.frame.evaluate(execExpression(fn as (...a: any[]) => unknown, args));
+      return fromBrowser(result as Serialized, ctx) as Remote<Awaited<R>>;
+    });
   }
 
   // ----------------------------------------------------------------------------------------------
@@ -175,7 +185,7 @@ export class UI5 {
     return createChain(
       {
         resolve: async (timeout) => ({ ctx: await this.ctx(timeout ?? options.timeout), start: { selector } }),
-        label: `ui5.control(${describeSelector(selector)})`,
+        label: `${this.label}.control(${describeSelector(selector)})`,
       },
       [],
       new Error()
@@ -183,15 +193,17 @@ export class UI5 {
   }
 
   /** Like {@link control} but returns `null` instead of throwing when nothing matches. */
-  async controlOrNull<T = unknown>(selector: UI5Selector, options: { timeout?: number } = {}): Promise<RemoteControl<T> | null> {
-    const ctx = await this.ctx(options.timeout);
-    const d = await callBridge<ControlDescriptor | null>(
-      ctx.frame,
-      "findControl",
-      [toBrowser(selector), ctx.timeout],
-      ctx.timeout
-    );
-    return d ? createRemoteControl<T>(ctx, d) : null;
+  controlOrNull<T = unknown>(selector: UI5Selector, options: { timeout?: number } = {}): Promise<RemoteControl<T> | null> {
+    return step(`${this.label}.controlOrNull(${describeSelector(selector)})`, async () => {
+      const ctx = await this.ctx(options.timeout);
+      const d = await callBridge<ControlDescriptor | null>(
+        ctx.frame,
+        "findControl",
+        [toBrowser(selector), ctx.timeout],
+        ctx.timeout
+      );
+      return d ? createRemoteControl<T>(ctx, d) : null;
+    });
   }
 
   /**
@@ -199,7 +211,7 @@ export class UI5 {
    * Use `await expect(ui5.controls(selector)).toHaveUI5Count(n)` to wait for a number of matches.
    */
   controls<T = unknown>(selector: UI5Selector, options: { timeout?: number } = {}): ControlsQuery<T> {
-    return createControlsQuery((timeout) => this.ctx(timeout ?? options.timeout), selector, new Error());
+    return createControlsQuery((timeout) => this.ctx(timeout ?? options.timeout), selector, new Error(), this.label);
   }
 
   /** Playwright locator of the root DOM element of the control matching the selector. */
@@ -207,17 +219,17 @@ export class UI5 {
     return (await this.control(selector, options)).locator();
   }
 
-  /** Shortcut for `(await ui5.control(selector)).press()`. */
+  /** Shortcut for `ui5.control(selector).press()` (one step for the lookup and the press). */
   async press(selector: UI5Selector, options: { timeout?: number; native?: boolean } = {}): Promise<void> {
-    await (await this.control(selector, options)).press(options);
+    await this.control(selector, options).press(options);
   }
 
-  /** Shortcut for `(await ui5.control(selector)).enterText(text)`. */
+  /** Shortcut for `ui5.control(selector).enterText(text)` (one step for the lookup and the input). */
   async enterText(
     selector: UI5Selector,
     text: string,
     options: { timeout?: number; clearTextFirst?: boolean } = {}
   ): Promise<void> {
-    await (await this.control(selector, options)).enterText(text, options);
+    await this.control(selector, options).enterText(text, options);
   }
 }

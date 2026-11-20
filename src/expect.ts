@@ -2,6 +2,7 @@ import { isDeepStrictEqual } from "node:util";
 import { expect as baseExpect, type ExpectMatcherState, type MatcherReturnType } from "@playwright/test";
 import { chainInternals } from "./control/chain";
 import { UI5Control } from "./control/remote";
+import { withoutSteps } from "./util/step";
 
 /** A control or something that resolves to one: `ui5.control(...)`, a chain step, a `RemoteControl`. */
 type ControlLike = UI5Control | PromiseLike<UI5Control>;
@@ -57,7 +58,8 @@ async function retry<T>(
   for (let i = 0; ; i++) {
     const remaining = deadline - Date.now();
     try {
-      const value = await read(Math.max(200, Math.min(remaining, 2000)));
+      // The attempts are not shown as steps: the matcher has its own step.
+      const value = await withoutSteps(() => read(Math.max(200, Math.min(remaining, 2000))));
       last = { ok: true, value };
       pass = check(value);
     } catch (e) {
