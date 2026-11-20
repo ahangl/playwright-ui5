@@ -4,3 +4,5 @@ dist/
 .env
 test-results/
 playwright-report/
+docs/.vitepress/dist/
+docs/.vitepress/cache/

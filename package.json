@@ -8,7 +8,7 @@
     "sapui5",
     "openui5"
   ],
-  "homepage": "https://github.com/ahangl/playwright-ui5#readme",
+  "homepage": "https://ahangl.github.io/playwright-ui5/",
   "bugs": {
     "url": "https://github.com/ahangl/playwright-ui5/issues"
   },
@@ -49,7 +49,11 @@
     "changeset": "changeset",
     "version-packages": "changeset version",
     "release": "changeset publish",
-    "prepublishOnly": "npm run lint && npm run format && npm run typecheck"
+    "prepublishOnly": "npm run lint && npm run format && npm run typecheck",
+    "docs:dev": "vitepress dev docs",
+    "docs:build": "vitepress build docs",
+    "docs:preview": "vitepress preview docs",
+    "docs:deploy": "node scripts/deploy-docs.mjs"
   },
   "peerDependencies": {
     "@playwright/test": ">=1.60.0",
@@ -71,7 +75,9 @@
     "prettier": "3.10.1",
     "tsup": "9.0.0",
     "typescript": "6.0.3",
-    "typescript-eslint": "8.72.2"
+    "typescript-eslint": "8.72.2",
+    "vitepress": "1.6.4",
+    "vitepress-plugin-llms": "1.15.0"
   },
   "peerDependenciesMeta": {
     "@sapui5/types": {

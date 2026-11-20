@@ -6,7 +6,15 @@ import tseslint from "typescript-eslint";
 
 export default defineConfig(
   // ESLint ignores node_modules/ and .git/ by default.
-  globalIgnores(["dist/", "test/fixture-app/", "test-results/", "playwright-report/", ".auth/"]),
+  globalIgnores([
+    "dist/",
+    "docs/.vitepress/dist/",
+    "docs/.vitepress/cache/",
+    "test/fixture-app/",
+    "test-results/",
+    "playwright-report/",
+    ".auth/"
+  ]),
   js.configs.recommended,
   tseslint.configs.recommended,
   // Config files and build scripts run in Node.
