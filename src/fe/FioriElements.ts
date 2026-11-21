@@ -96,7 +96,7 @@ function describeSteps(steps: Step[]): string {
  *   onTheMainPage: { ListReport: { appId: "my.app", componentId: "BooksList", contextPath: "/Books" } },
  * });
  * await When.onTheMainPage.onFilterBar().iChangeSearchField("Poe").and.iExecuteSearch();
- * await Then.onTheMainPage.onTable().iCheckRows(2);
+ * await Then.onTheMainPage.onTable().iCheckRows({}, 2);
  */
 export class FioriElements {
   constructor(private readonly ui5: UI5) {}

@@ -82,15 +82,16 @@ export type FioriElementsChain<T> = [T] extends [MissingSapTypes]
       };
 
 /**
- * Identifies a table for `onTable()`: its header title / id, or the navigation property and qualifier.
+ * Identifies a table for `onTable()`. Object page: its header title, or the navigation property and qualifier.
+ * List report: the id part (`"Books"` for `fe::table::Books::LineItem`); a qualifier is ignored.
  * The same shape as `sap.fe.test.api.TableIdentifier`. An empty object is not an identifier: it builds the
  * table id `fe::table::undefined::LineItem`.
  */
 export type FioriElementsTableIdentifier = string | { property: string; qualifier?: string };
 
 /**
- * `onTable(table?)` of the ListReport and ObjectPage actions and assertions. Without an argument the runtime
- * uses the page's only table; `@sapui5/types` before 1.150 declares the argument as required.
+ * `onTable(table?)` of the ListReport and ObjectPage actions and assertions. Without an argument a list report
+ * uses its only table; an object page needs an argument. `@sapui5/types` before 1.150 declares it as required.
  */
 type OnTableMethod<F, T> = F extends (...args: any[]) => infer R
   ? (table?: FioriElementsTableIdentifier) => FioriElementsStep<Next<T, R>>
@@ -102,7 +103,7 @@ export interface UntypedFioriElementsChain {
   [method: string]: any;
 }
 
-/** Keeps up to 4 overloads of a sap.fe.test method (e.g. `iCheckRows(5)` and `iCheckRows({...}, 1)`). */
+/** Keeps up to 4 overloads of a sap.fe.test method (e.g. both `iChangeRow` signatures). */
 type ChainMethod<F, T> = F extends {
   (...args: infer A1): infer R1;
   (...args: infer A2): infer R2;

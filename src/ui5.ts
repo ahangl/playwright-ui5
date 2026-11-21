@@ -109,7 +109,7 @@ export class UI5 {
   // ----------------------------------------------------------------------------------------------
   // general
 
-  /** Waits until UI5 has no pending work (requests, timeouts, rendering, busy indicators). */
+  /** Waits until UI5 has no pending work (requests, timeouts, promises, rendering). */
   waitForUI5(options: { timeout?: number } = {}): Promise<void> {
     return step(`${this.label}.waitForUI5()`, async () => {
       const { frame, timeout } = await this.ctx(options.timeout);
