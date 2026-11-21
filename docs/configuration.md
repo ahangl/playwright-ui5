@@ -32,18 +32,18 @@ export default defineConfig<UI5TestOptions>({
 test.use({ ui5Options: { appFrame: "#application-frame" } });
 ```
 
-| Option                    | Default                               | Description                                                                         |
-| ------------------------- | ------------------------------------- | ----------------------------------------------------------------------------------- |
-| `waitForUI5Timeout`       | `15000`                               | Max. ms to wait for UI5 to become idle and for controls to appear.                  |
-| `feTimeout`               | `30000`                               | Max. ms for a single Fiori elements test library (OPA) statement (only `fe`).       |
-| `feWaitAfter`             | `true`                                | `Given` / `When` statements wait until UI5 is idle after their last action.         |
-| `appFrame`                | `"auto"`                              | Which frame runs the app: `"auto"`, `"main"` or a CSS selector of the app `iframe`. |
-| `launchpadIframeSelector` | [see below](#launchpadiframeselector) | CSS selector that `appFrame: "auto"` uses to find the launchpad app iframe.         |
-| `ignoreAutoWaitUrls`      | `[]`                                  | Requests (XHR and `fetch`) that waiting for UI5 ignores.                            |
+| Option                    | Default                               | Description                                                                                   |
+| ------------------------- | ------------------------------------- | --------------------------------------------------------------------------------------------- |
+| `waitForUI5Timeout`       | `15000`                               | Max. ms to wait for UI5 to become idle and for controls to appear.                            |
+| `feTimeout`               | `30000`                               | Max. ms for a single Fiori elements test library (OPA) statement (only `fe`).                 |
+| `feWaitAfter`             | `true`                                | `Given` / `When` statements wait until UI5 is idle after their last action.                   |
+| `appFrame`                | `"auto"`                              | Which frame runs the app: `"auto"`, `"main"`, or a CSS selector of the app `iframe`.          |
+| `launchpadIframeSelector` | [see below](#launchpadiframeselector) | CSS selector that `appFrame: "auto"` uses to find the app iframe of a launchpad or Work Zone. |
+| `ignoreAutoWaitUrls`      | `[]`                                  | Requests (XHR and `fetch`) that waiting for UI5 ignores.                                      |
 
 ### waitForUI5Timeout
 
-Every control lookup, method call and action first waits until UI5 is idle: no pending requests, timeouts, promises or rendering. `goTo` waits after navigating. This option limits that wait and the wait for a control to appear. Most calls also take `{ timeout }` to override it once:
+Every control lookup, method call, and action first waits until UI5 is idle: no pending requests, timeouts, promises, or rendering. `goTo` waits after navigating. This option limits that wait and the wait for a control to appear. Most calls also take `{ timeout }` to override it once:
 
 ```ts
 await ui5.control(selector, { timeout: 30_000 }).press();
@@ -64,16 +64,16 @@ OPA waits until UI5 is idle before each action, but not after the last one. So a
 ### appFrame
 
 - `"auto"` (default) uses the first of these that applies:
-  1. A visible launchpad application iframe (Work Zone or FLP sandbox). It is used even while UI5 is still loading inside it; playwright-ui5 then waits for UI5 there.
+  1. A visible launchpad app iframe (Work Zone or FLP sandbox). playwright-ui5 uses it even while UI5 is still loading inside it, and then waits for UI5 there.
   2. Any other visible iframe that already runs UI5.
   3. The main frame, for a standalone app.
 
-  If the main frame is a launchpad, playwright-ui5 asks it where the current app runs (`sap.ushell` AppLifeCycle). The launchpad home page or an app embedded in the launchpad window uses the main frame. Otherwise it keeps waiting for the app iframe.
+  If the main frame runs a launchpad or Work Zone, playwright-ui5 asks it where the current app runs (`sap.ushell` AppLifeCycle). The home page or an app embedded in the shell window uses the main frame. Otherwise it keeps waiting for the app iframe.
 
 - `"main"`: always the top-level frame.
-- Any other string: a CSS selector of the `<iframe>` that hosts the app, e.g. `"#application-frame"`.
+- Any other string: a CSS selector of the `<iframe>` that hosts the app, for example, `"#application-frame"`.
 
-The detected frame is re-checked before each call, so opening an app from the home page (e.g. via the `Shell` page object or `ui5.goTo("#Intent-action")`) switches to the new app's iframe.
+The detected frame is re-checked before each call, so opening an app from the home page (for example, with the `Shell` page object or `ui5.goTo("#Intent-action")`) switches to the new app's iframe.
 
 ### launchpadIframeSelector
 

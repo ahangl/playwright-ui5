@@ -1,12 +1,12 @@
 ---
-description: "Short solutions for common tasks: Work Zone navigation, keyboard input, downloads, several users and more."
+description: "Short solutions for common tasks: Work Zone navigation, keyboard input, downloads, several users, and more."
 ---
 
 # Cookbook
 
 ## Ignore requests that never finish
 
-Long polling, push channels or notification polling never finish, so every call waits for them until `waitForUI5Timeout` runs out. Ignore them:
+Long polling, push channels, or notification polling never finish, so every call waits for them until `waitForUI5Timeout` runs out. Ignore them:
 
 ```ts
 // playwright.config.ts, or test.use(...) in a test file
@@ -119,7 +119,7 @@ await expect(ui5.controls({ controlType: "sap.m.ColumnListItem" })).toHaveUI5Cou
 ```
 
 - Look up the tab keys and the table ids (`...::LineItem::<qualifier>`) with the UI5 Inspector.
-- To address one table directly, select it by its id, e.g. `ui5.control({ id: /::LineItem::Archived$/ })`.
+- To address one table directly, select it by its id, for example, `ui5.control({ id: /::LineItem::Archived$/ })`.
 - The rows are the rendered rows. A growing table renders only its first page.
 
 ## Several users

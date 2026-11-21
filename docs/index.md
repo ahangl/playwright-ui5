@@ -37,7 +37,7 @@ features:
 
 `@ahangl/playwright-ui5` extends Playwright's `test` with two fixtures:
 
-- **`ui5`**: the control API. It finds UI5 controls by selector, calls their methods in the browser, and waits until UI5 is idle (no pending requests, timeouts or rendering) before every call.
+- **`ui5`**: the control API. It finds UI5 controls by selector, calls their methods in the browser, and waits until UI5 is idle (no pending requests, timeouts, or rendering) before every call.
 - **`fe`**: the SAP Fiori elements V4 test library (`sap.fe.test`) with typed `Given` / `When` / `Then` chains.
 
 It also exports `expect` with UI5 matchers, and `login` / `ias` for SAP Build Work Zone authentication.
@@ -67,7 +67,7 @@ Calls that start with `ui5.` or `expect(` work in **any UI5 app**. `fe.init` and
 | [Login](./authentication): `login`, `ias()`                                   |         ✓         |           ✓           |         ✓         |
 | [Fiori elements test library](./fe-testlib): `fe`, `Given` / `When` / `Then`  |         –         | – (not supported yet) |         ✓         |
 
-In a Fiori elements V4 app with custom parts (custom sections, columns, actions or building blocks), use `fe` for the standard parts and the control API for the custom ones, in the same test.
+In a Fiori elements V4 app with custom parts (custom sections, columns, actions, or building blocks), use `fe` for the standard parts and the control API for the custom ones, in the same test.
 
 ## Testing scope
 
@@ -75,4 +75,4 @@ playwright-ui5 is for end-to-end tests: real user flows through the UI, against 
 
 ## For AI agents
 
-This documentation is also available as plain text: [`llms.txt`](./llms.txt){target="_self"} (index) and [`llms-full.txt`](./llms-full.txt){target="_self"} (all pages in one file). Every page is also available as Markdown by adding `.md` to its URL. The [API reference](./api/) lists `ui5`, `fe` and `expect` with their signatures.
+This documentation is also available as plain text: [`llms.txt`](./llms.txt){target="_self"} (index) and [`llms-full.txt`](./llms-full.txt){target="_self"} (all pages in one file). Every page is also available as Markdown by adding `.md` to its URL. The [API reference](./api/) lists `ui5`, `fe`, and `expect` with their signatures.

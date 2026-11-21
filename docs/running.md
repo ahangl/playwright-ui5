@@ -29,7 +29,7 @@ ui5: press ui5.control({"controlType":"sap.m.Button","properties":{"text":"Go"}}
 - The retrying `expect` matchers show only the matcher step, not each attempt.
 - Calls on `ui5.shell` are labeled `ui5.shell.…`.
 
-Use `trace: "retain-on-failure"` to keep a trace with DOM snapshots, network and console for failing tests.
+To keep a trace with DOM snapshots, network, and console for failing tests, use `trace: "retain-on-failure"`.
 
 ## Error messages
 
@@ -39,7 +39,7 @@ Errors point at your test line, not at library internals. The most common one is
 playwright-ui5: no control found for selector {"controlType":"sap.m.Button","properties":{"text":"Go"}} within 15000ms
 ```
 
-A failing chain shows the whole chain, the failing step and what the steps before it returned:
+A failing chain shows the whole chain, the failing step, and what the steps before it returned:
 
 ```txt
 playwright-ui5: ui5.control({"controlType":"sap.m.Table"}).getItems(0).getNope() failed at .getNope():
@@ -49,15 +49,15 @@ playwright-ui5: ui5.control({"controlType":"sap.m.Table"}).getItems(0).getNope()
   ✘ getNope()
 ```
 
-A failing Fiori elements statement contains the statement, OPA's diagnostics and the last OPA log entries.
+A failing Fiori elements statement contains the statement, OPA's diagnostics, and the last OPA log entries.
 
-If no frame with the app is found, the error lists what playwright-ui5 saw (launchpad iframes, whether the main frame runs UI5 or a launchpad) and suggests setting `ui5Options.appFrame`.
+If no frame with the app is found, the error lists what playwright-ui5 saw (app iframes, whether the main frame runs UI5 or a launchpad or Work Zone shell) and suggests setting `ui5Options.appFrame`.
 
-## Inspecting controls
+## Inspect controls
 
 ```ts
 const control = await ui5.control(selector);
-console.log(control.id, control.className); // e.g. "__button3", "sap.m.Button"
+console.log(control.id, control.className); // for example, "__button3", "sap.m.Button"
 console.log(control.methods); // all public methods
 console.log(await ui5.version()); // UI5 version of the app
 ```

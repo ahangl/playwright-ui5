@@ -1,5 +1,5 @@
 ---
-description: "Reference of the fe fixture: fe.init, page configuration, statements and the sap.fe.test functions per area."
+description: "Reference of the fe fixture: fe.init, page configuration, statements, and the sap.fe.test functions per area."
 ---
 
 # fe
@@ -24,7 +24,7 @@ fe.init<const P extends FioriElementsPages>(
 ): { Given; When; Then }
 ```
 
-Declares the page objects and returns the roots `Given`, `When` and `Then`. Each has one property per page. Nothing runs in the browser until a statement is awaited, so `fe.init()` can be called before the app is open.
+Declares the page objects and returns the roots `Given`, `When`, and `Then`. Each has one property per page. Nothing runs in the browser until a statement is awaited, so `fe.init()` can be called before the app is open.
 
 | Option      | Default                                              | Description                                                                 |
 | ----------- | ---------------------------------------------------- | --------------------------------------------------------------------------- |
@@ -45,9 +45,9 @@ type FioriElementsPages = Record<string, FioriElementsPageConfig>;
 
 - `appId` is `sap.app.id` from the manifest.
 - `componentId` is the id of the routing target (`sap.ui5/routing/targets/<target>/id`).
-- `contextPath` (e.g. `"/Books"`) or `entitySet` (e.g. `"Books"`) identifies the entity of the page, as in the target's `settings`.
+- `contextPath` (for example, `"/Books"`) or `entitySet` (for example, `"Books"`) identifies the entity of the page, as in the target's `settings`.
 - The page names (`onTheMainPage`, ...) are yours. They become the properties of `Given` / `When` / `Then`.
-- `Shell` statements run in the top-level (launchpad) frame, all other pages in the app frame.
+- `Shell` statements run in the top-level frame (launchpad or Work Zone), all other pages in the app frame.
 
 These are the settings of SAP's [`ListReport`](https://ui5.sap.com/#/api/sap.fe.test.ListReport) and [`ObjectPage`](https://ui5.sap.com/#/api/sap.fe.test.ObjectPage) constructors. Page extensions (their second argument) aren't supported.
 
@@ -60,10 +60,10 @@ await When.onTheMainPage.onTable().iPressRow({ "Book ID": "251" });
 
 - **Root:** `Given` (arrangements), `When` (actions, `i<Do>...`), `Then` (assertions, `iCheck...` / `iSee...`).
 - **Page:** a name from `fe.init()`.
-- **Area:** `onTable()`, `onFilterBar()`, `onHeader()`, ... Some functions are on the page itself, e.g. `iGoToSection()`.
+- **Area:** `onTable()`, `onFilterBar()`, `onHeader()`, ... Some functions are on the page itself, for example, `iGoToSection()`.
 - **Function:** from the [tables below](#functions).
 
-A statement only runs when awaited; `.and` continues it. How statements wait, fail and are typed: [Calling test functions](../fe-testlib#calling-test-functions).
+A statement only runs when awaited; `.and` continues it. How statements wait, fail, and are typed: [Calling test functions](../fe-testlib#call-test-functions).
 
 ### onTable()
 
@@ -89,7 +89,7 @@ await Then.onTheDetailPage.onTable({ property: "reviews" }).iCheckRows({}, 1);
 
 ## Functions
 
-The functions are SAP's. Each link opens the UI5 API reference with every function of that area. It shows the latest UI5 version; select your app's version in its version switcher if a function is missing.
+The functions are SAP's. Each link opens the UI5 API reference with every function of that area. It shows the latest UI5 version. If a function is missing, select your app's version in its version switcher.
 
 ### List report (`ListReport`)
 

@@ -1,10 +1,10 @@
 ---
-description: "Fields, forms, tables and dialogs that the Fiori elements test library doesn't find, with causes and fixes."
+description: "Fields, forms, tables, and dialogs that the Fiori elements test library doesn't find, with causes and fixes."
 ---
 
 # Troubleshooting the test library
 
-Problems that come up when you test a Fiori elements V4 app with the `fe` fixture. Most of them are about ids: `sap.fe.test` builds the id of a field, form or table from what you pass, and the statement times out when that id doesn't exist.
+Problems that come up when you test a Fiori elements V4 app with the `fe` fixture. Most of them are about ids: `sap.fe.test` builds the id of a field, form, or table from what you pass, and the statement times out when that id doesn't exist.
 
 The examples use a bookshop app with the pages `onTheMainPage` (list report of Books) and `onTheDetailPage` (object page of a book), as in the [test library guide](./fe-testlib).
 
@@ -22,7 +22,7 @@ The ids that `sap.fe.test` looks for end like this:
 
 To see the ids of your app:
 
-- Open the trace (`npx playwright show-trace`), select a step and search the DOM snapshot for `DataField::` or `fe::table::`.
+- Open the trace (`npx playwright show-trace`), select a step, and search the DOM snapshot for `DataField::` or `fe::table::`.
 - Or list them from the test:
 
   ```ts
@@ -42,7 +42,7 @@ Checking field '{property: name}' on form 'General Information' with value 'Edga
 Opa timeout after 30 seconds
 ```
 
-**Cause:** the form shows a field of an association, e.g. the author's name on a book. Its id contains the whole path: `...::FormElement::DataField::author::name`. `sap.fe.test` builds the id from `property` and replaces `/` with `::`, so `{ property: "name" }` looks for a different id.
+**Cause:** the form shows a field of an association, for example, the author's name on a book. Its id contains the whole path: `...::FormElement::DataField::author::name`. `sap.fe.test` builds the id from `property` and replaces `/` with `::`, so `{ property: "name" }` looks for a different id.
 
 **Fix:** pass the path as in the annotation (`author/name`) or as in the id (`author::name`):
 
@@ -60,7 +60,7 @@ await ui5.control({ controlType: "sap.ui.mdc.Field", id: /::FormElement::DataFie
 
 **Symptom:** as in [A field of an association isn't found](#a-field-of-an-association-isn-t-found).
 
-**Cause:** the ids use the property names of the service. They often differ from the label and aren't simply the label in camel case: the label "Author" can be `author_ID`, "Genre" `genre_code`, "Pages" `pageCount`. A form can also show the same information twice, e.g. `authorName` as read-only text and `author_ID` with a value help in edit mode. These are different fields with different ids.
+**Cause:** the ids use the property names of the service. They often differ from the label and aren't the label in camel case: the label "Author" can be `author_ID`, "Genre" `genre_code`, "Pages" `pageCount`. A form can also show the same information twice, for example, `authorName` as read-only text and `author_ID` with a value help in edit mode. These are different fields with different ids.
 
 **Fix:** take the property from the id ([Find the real ids](#find-the-real-ids)), not from the label.
 
@@ -111,9 +111,9 @@ await When.onTheDetailPage.onForm("Inventory").iChangeField({ property: "stock" 
 
 ### A typed value stays empty
 
-**Symptom:** `iChangeField` or `iChangeDialogField` passes, but the field is empty afterwards, with the message `The value "..." does not exist.`. Later, Save fails because a mandatory field is empty, or the Create button of a dialog stays inactive.
+**Symptom:** `iChangeField` or `iChangeDialogField` passes, but the field is empty afterwards, with the message `The value "..." does not exist.`. Later, **Save** fails because a mandatory field is empty, or the **Create** button of a dialog stays inactive.
 
-**Cause:** both functions type the text. A field with a value help resolves the text with a request to the value list, e.g. `$filter=code eq 'en-US'`. A text that isn't an entry leaves the field empty.
+**Cause:** both functions type the text. A field with a value help resolves the text with a request to the value list, for example, `$filter=code eq 'en-US'`. A text that isn't an entry leaves the field empty.
 
 **Fix:** type what the app resolves: the key or the description, depending on the field, and spelled exactly like the entry. There is no statement to open the value help of a dialog field. `iOpenValueHelp` exists only for `onForm()` and `onFilterBar()`. In a dialog, use the [control API](./usage).
 
@@ -181,7 +181,7 @@ await When.onTheDetailPage.onTable("Reviews").iChangeRow({ Reviewer: "Ann" }, { 
 
 ### `iPressRow(0)` in a grouped table
 
-**Symptom:** `iPressRow(0)` times out in a list report grouped by a column, e.g. Books grouped by author.
+**Symptom:** `iPressRow(0)` times out in a list report grouped by a column, for example, Books grouped by author.
 
 **Cause:** a row number counts the group headers, and row 0 is a group header. Group headers aren't bound to data, so they never match.
 
@@ -227,7 +227,7 @@ The fields of a create dialog have ids like `CreateDialog::<EntityType>::<proper
 
 ### The table isn't filtered after `iChangeSearchField`
 
-**Cause:** `iChangeSearchField` only types the text. With a Go button, the filter bar searches when you press it.
+**Cause:** `iChangeSearchField` only types the text. With a **Go** button, the filter bar searches when you press it.
 
 **Fix:**
 
@@ -235,7 +235,7 @@ The fields of a create dialog have ids like `CreateDialog::<EntityType>::<proper
 await When.onTheMainPage.onFilterBar().iChangeSearchField("Raven").and.iExecuteSearch();
 ```
 
-A filter bar in live mode searches without Go and has no Go button. There, `iExecuteSearch()` fails with `DOM representation of control '...FilterBar...' has no element with user-provided ID suffix 'btnSearch'`. Change the search field with the test library, then press Enter in the field:
+A filter bar in live mode searches without **Go** and has no **Go** button. There, `iExecuteSearch()` fails with `DOM representation of control '...FilterBar...' has no element with user-provided ID suffix 'btnSearch'`. Change the search field with the test library, then press Enter in the field:
 
 ```ts
 await When.onTheMainPage.onFilterBar().iChangeSearchField("Raven");

@@ -1,5 +1,5 @@
 ---
-description: "Install playwright-ui5, configure Playwright and write a first test for a UI5 app."
+description: "Install playwright-ui5, configure Playwright, and write a first test for a UI5 app."
 ---
 
 # Installation
@@ -8,7 +8,7 @@ description: "Install playwright-ui5, configure Playwright and write a first tes
 
 - Node.js 22 or later
 - `@playwright/test` 1.60 or later
-- A UI5 application (standalone, in a launchpad or in SAP Build Work Zone). The Fiori elements test library needs an OData V4 Fiori elements app.
+- A UI5 application (standalone, in a launchpad, or in SAP Build Work Zone). The Fiori elements test library needs an OData V4 Fiori elements app.
 
 ## Install the packages
 
@@ -49,7 +49,7 @@ Import `test` and `expect` from `@ahangl/playwright-ui5` instead of `@playwright
 
 ### Any UI5 app
 
-The control API and the assertions work in every UI5 app: freestyle, Fiori elements V2 or V4, standalone, in a launchpad or in SAP Build Work Zone.
+The control API and the assertions work in every UI5 app (freestyle, Fiori elements V2, and Fiori elements V4), standalone, in a launchpad, or in SAP Build Work Zone.
 
 ```ts
 // tests/books.spec.ts

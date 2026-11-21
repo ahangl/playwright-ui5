@@ -18,7 +18,7 @@ The `fe` fixture runs SAP's official test library for Fiori elements V4 apps ([`
 
 Use the control API for anything the test library doesn't cover. Both can be mixed in one test.
 
-## Integrating the test library
+## Integrate the test library
 
 Prerequisites:
 
@@ -48,14 +48,14 @@ test("list report to object page", async ({ ui5, fe }) => {
 
 Each page is `{ ListReport | ObjectPage | Shell: settings }`. `appId` is `sap.app.id` from the manifest, `componentId` the id of the routing target, and `contextPath` or `entitySet` the entity of the page. The page names (`onTheMainPage`, ...) are yours. All fields: [Page configuration](./api/fe#page-configuration).
 
-## Calling test functions
+## Call test functions
 
 `fe.init(pages, { timeout?, waitAfter? })` returns typed `Given` / `When` / `Then` roots. Open the app with `ui5.goTo` before the first statement.
 
 - Each statement is recorded and only runs when you `await` it. Await every statement.
 - Statements can be chained with `.and`, as in OPA.
 - A `When` statement waits until UI5 is idle after its last action (so does `Given`). After `await When.onTheDetailPage.onFooter().iExecuteSave()` the object is saved, and the next step, also a Playwright locator, sees the result. `{ waitAfter: false }` or [`ui5Options.feWaitAfter`](./configuration#fewaitafter) turns it off. `Then` statements wait before each check, like OPA.
-- A failing statement throws an error. The message contains the statement, OPA's diagnostics and the last OPA log entries, and it points at your test line.
+- A failing statement throws an error. The message contains the statement, OPA's diagnostics, and the last OPA log entries, and it points at your test line.
 - Each statement appears as a step in the Playwright report and trace.
 - The timeout per statement is `ui5Options.feTimeout` (default 30 s).
 
@@ -65,7 +65,7 @@ The test library follows OPA's naming: actions start with `i<Do>` (`iPressRow`, 
 
 ## Available functions
 
-A statement has four parts: `When` / `Then`, your page name, an area of the page such as `onTable()`, and the function ([details](./api/fe#statements)). Each area has its own page in the UI5 API reference, e.g. `onTable()` on `When` is [`TableActions`](https://ui5.sap.com/#/api/sap.fe.test.api.TableActions).
+A statement has four parts: `When` / `Then`, your page name, an area of the page such as `onTable()`, and the function ([details](./api/fe#statements)). Each area has its own page in the UI5 API reference, for example, `onTable()` on `When` is [`TableActions`](https://ui5.sap.com/#/api/sap.fe.test.api.TableActions).
 
 The fastest way to find a function:
 
@@ -91,7 +91,7 @@ await When.onTheDetailPage.iGoToSection("Reviews"); // also renders the tables o
 await When.onTheDetailPage.onTable("Reviews").iExecuteCreate();
 ```
 
-A filter bar in live mode has no Go button for `iExecuteSearch()`, see [Troubleshooting](./fe-troubleshooting#the-table-isn-t-filtered-after-ichangesearchfield).
+A filter bar in live mode has no **Go** button for `iExecuteSearch()`, see [Troubleshooting](./fe-troubleshooting#the-table-isn-t-filtered-after-ichangesearchfield).
 
 Notes on the typings and arguments:
 
@@ -114,7 +114,7 @@ Notes on the typings and arguments:
   ).toBeUI5Visible();
   ```
 
-## Combining with the control API
+## Combine with the control API
 
 ```ts
 await When.onTheMainPage.onFilterBar().iChangeSearchField("Raven").and.iExecuteSearch();
@@ -126,20 +126,20 @@ await ui5.press({ controlType: "sap.m.Button", properties: { text: "Export" } })
 
 There are no page objects for these apps. Use the [control API](./usage) and the [UI5 assertions](./usage#assertions):
 
-- Find the controls and their types with the UI5 Inspector browser extension, or with `control.className` and `control.methods` (see [Inspecting controls](./running#inspecting-controls)).
+- Find the controls and their types with the UI5 Inspector browser extension, or with `control.className` and `control.methods` (see [Inspecting controls](./running#inspect-controls)).
 - Fiori elements V2 apps are built from smart controls such as `sap.ui.comp.smartfilterbar.SmartFilterBar` and `sap.ui.comp.smarttable.SmartTable`. The table inside a smart table is usually an `sap.m.Table` or an `sap.ui.table.Table`.
-- Select controls by `bindingPath`, `labelFor` or `i18NText` rather than by generated ids (see [Locators](./locators)).
+- Select controls by `bindingPath`, `labelFor`, or `i18NText` rather than by generated ids (see [Locators](./locators)).
 
 ## SAP Build Work Zone
 
-Nothing special is needed: `Shell` statements run in the launchpad (top-level) frame, all other pages in the app iframe. The page objects are created in whichever frame the statement runs in.
+Nothing special is needed: `Shell` statements run in the top-level frame (the Work Zone shell), all other pages in the app iframe. The page objects are created in whichever frame the statement runs in.
 
 The `Shell` actions `iNavigateHome()` and `iNavigateBack()` don't work with the Work Zone shell bar: they look for elements of the classic launchpad header. Navigate with `ui5.goTo("#Shell-home")` or `ui5.goTo("#Intent-action")` instead. See [Known limitations](./limitations).
 
 ## How it works
 
-The library injects a small bridge into the app frame. The bridge creates the `sap.fe.test` page objects with `Opa5.createPageObjects`, queues your statement and runs `Opa.emptyQueue()`.
+The library injects a small bridge into the app frame. The bridge creates the `sap.fe.test` page objects with `Opa5.createPageObjects`, queues your statement, and runs `Opa.emptyQueue()`.
 
 ## Troubleshooting
 
-Fields, forms or tables that aren't found, dialogs that stay open and other problems: see [Troubleshooting the test library](./fe-troubleshooting).
+Fields, forms, or tables that aren't found, dialogs that stay open, and other problems: see [Troubleshooting the test library](./fe-troubleshooting).

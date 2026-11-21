@@ -1,11 +1,11 @@
 ---
-description: "The concepts of the ui5 fixture: finding controls, RemoteControl, actions, chains, assertions and navigation."
+description: "The concepts of the ui5 fixture: finding controls, RemoteControl, actions, chains, assertions, and navigation."
 ---
 
 # Usage
 
 ::: info Works in every UI5 app
-The control API, the assertions and the navigation work in freestyle apps and in Fiori elements V2 and V4 apps, standalone, in a launchpad or in SAP Build Work Zone. Only the [Fiori elements test library](./fe-testlib) needs Fiori elements V4.
+The control API, the assertions, and the navigation work in freestyle apps and in Fiori elements V2 and V4 apps, standalone, in a launchpad, or in SAP Build Work Zone. Only the [Fiori elements test library](./fe-testlib) needs Fiori elements V4.
 :::
 
 This page explains the concepts. Every method with its signature is in the [API reference](./api/).
@@ -32,7 +32,7 @@ The fixtures are:
 - `fe`: the [Fiori elements test library](./fe-testlib) (Fiori elements V4 apps only).
 - All of Playwright's fixtures (`page`, `context`, ...) are still available.
 
-## Finding controls
+## Find controls
 
 A control is found by a selector, the same format as wdi5 and OPA (see [Locators](./locators)):
 
@@ -49,11 +49,11 @@ const dialog = await ui5.controlOrNull({ controlType: "sap.m.Dialog" }, { timeou
 - `ui5.controls()` returns all controls that match now. It doesn't wait for matches. Use [`toHaveUI5Count(n)`](./api/expect#tohaveui5count) to wait for a number of matches.
 - `ui5.locator()` gives a Playwright `Locator` for the control's DOM element.
 
-Every call first waits until UI5 is idle (no pending requests, timeouts, promises or rendering).
+Every call first waits until UI5 is idle (no pending requests, timeouts, promises, or rendering).
 
 `ui5.locator()` returns a `Promise<Locator>`, because it first finds the control. Await it: `const go = await ui5.locator(GO_BUTTON)`. Without `await`, Playwright reports confusing errors such as `go.click is not a function` or "expected a Locator".
 
-All methods: [ui5 reference](./api/ui5#finding-controls).
+All methods: [ui5 reference](./api/ui5#find-controls).
 
 ## RemoteControl
 
@@ -66,9 +66,9 @@ const context = await item.getBindingContext(); // a remote object
 await context.getProperty("title");
 ```
 
-Controls come back as `RemoteControl`s, other UI5 objects as remote objects, plain data as values. Pass the UI5 class as a type parameter for typed methods: `ui5.control<Input>({...})` with `import type Input from "sap/m/Input"` (needs `@sapui5/types`). Return values, arguments, properties and helpers: [RemoteControl reference](./api/ui5#remotecontrol).
+Controls come back as `RemoteControl`s, other UI5 objects as remote objects, plain data as values. Pass the UI5 class as a type parameter for typed methods: `ui5.control<Input>({...})` with `import type Input from "sap/m/Input"` (needs `@sapui5/types`). Return values, arguments, properties, and helpers: [RemoteControl reference](./api/ui5#remotecontrol).
 
-### press and enterText
+### `press()` and `enterText()`
 
 ```ts
 await go.press();
@@ -76,9 +76,9 @@ await input.enterText("Edgar Allan Poe");
 await go.press({ native: true }); // real Playwright click on the DOM element
 ```
 
-Both use OPA's actions and wait until the control is visible, enabled, not busy and not covered by a popup. Details: [`press()`](./api/ui5#press), [`enterText()`](./api/ui5#entertext).
+Both use OPA's actions and wait until the control is visible, enabled, not busy, and not covered by a popup. Details: [`press()`](./api/ui5#press), [`enterText()`](./api/ui5#entertext).
 
-### exec
+### `exec()`
 
 `exec` runs a function in the browser. It is serialized, so it can't use variables of the test: pass them as arguments.
 
@@ -113,7 +113,7 @@ await expect(ui5.controls({ controlType: "sap.m.ColumnListItem" })).toHaveUI5Cou
 
 ## Navigation
 
-`ui5.goTo()` navigates and then waits for UI5. It takes a path (relative to `baseURL`), a hash (intent navigation in a launchpad) or a route of the app's router:
+`ui5.goTo()` navigates and then waits for UI5. It takes a path (relative to `baseURL`), a hash (intent navigation in a launchpad or Work Zone), or a route of the app's router:
 
 ```ts
 await ui5.goTo("/index.html");
@@ -125,7 +125,7 @@ Navigating with the router doesn't reload the page. Details: [`ui5.goTo()`](./ap
 
 ## Launchpad and Work Zone shell
 
-`ui5` works in the app frame. `ui5.shell` is the same control API for the top-level frame, i.e. the launchpad or Work Zone shell (header, user menu):
+`ui5` works in the app frame. `ui5.shell` is the same control API for the top-level frame, that is, the launchpad or Work Zone shell (header, user menu):
 
 ```ts
 await ui5.shell.control({ id: "userActionsMenuHeaderButton" }).press();
@@ -136,4 +136,4 @@ There is no switching between frames.
 
 ## Without fixtures
 
-The `UI5` class works with any `Page`, e.g. in a global setup: `new UI5(page, options)`. See [Without fixtures](./api/ui5#without-fixtures).
+The `UI5` class works with any `Page`, for example, in a global setup: `new UI5(page, options)`. See [Without fixtures](./api/ui5#without-fixtures).

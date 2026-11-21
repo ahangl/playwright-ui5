@@ -1,5 +1,5 @@
 ---
-description: "Reference of the retrying UI5 matchers of expect: toHaveUI5Property, toHaveUI5Text, toHaveUI5Count and more."
+description: "Reference of the retrying UI5 matchers of expect: toHaveUI5Property, toHaveUI5Text, toHaveUI5Count, and more."
 ---
 
 # Assertions (expect)
@@ -8,7 +8,7 @@ description: "Reference of the retrying UI5 matchers of expect: toHaveUI5Propert
 
 - Each matcher looks up the control again and retries until the check passes or the `expect` timeout runs out (`expect.timeout` in the Playwright config, default 5 s).
 - They support `.not` and `{ timeout }` as the last argument. A control that doesn't exist counts as "no match", so with `.not` it passes.
-- The failure message shows the control, the expected value and the last value read.
+- The failure message shows the control, the expected value, and the last value read.
 
 ```ts
 import { test, expect } from "@ahangl/playwright-ui5";

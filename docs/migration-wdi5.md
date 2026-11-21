@@ -1,5 +1,5 @@
 ---
-description: "Move wdi5 tests to playwright-ui5: API mapping, exec, the fluent API and the Fiori elements test library."
+description: "Move wdi5 tests to playwright-ui5: API mapping, exec, the fluent API, and the Fiori elements test library."
 ---
 
 # Migration from wdi5
@@ -32,14 +32,14 @@ playwright-ui5 follows wdi5's concepts: the same selectors, a control API with U
 | `control.exec(function () { return this.getText() })`                                            | `control.exec((control) => control.getText())`, see [exec](#exec)           |
 | `control.fireEvent(name, { eval: () => mock })`                                                  | `control.exec(...)`, see [Functions as arguments](#functions-as-arguments)  |
 | `browser.screenshot()`                                                                           | Playwright `page.screenshot()` / `screenshot: "only-on-failure"`            |
-| `wdi5.getLogger()`                                                                               | `console.log`, Playwright's report steps and trace                          |
+| `wdi5.getLogger()`                                                                               | `console.log`, Playwright's report steps, and trace                         |
 | `browser.fe.initialize(pages)` + `execute((Given, When, Then) => ...)`                           | `const { Given, When, Then } = fe.init(pages)`, then `await When...`        |
 | `capabilities["wdi5:authentication"]`                                                            | `login(page, { url })` in a setup project + `storageState`                  |
 | `wdi5_username` / `wdi5_password`                                                                | `UI5_USERNAME` / `UI5_PASSWORD` (`credentialsFromEnv(prefix)`)              |
 
-## Porting tests
+## Port tests
 
-### exec
+### `exec()`
 
 In wdi5 the control is `this`, and the arguments start at the first parameter. Here the control is the first parameter, followed by the arguments, so TypeScript can type it:
 

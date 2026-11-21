@@ -19,7 +19,7 @@ Every lookup, method call and action first waits until UI5 is idle: no pending r
 
 [Learn more: Usage](../usage)
 
-## Finding controls
+## Find controls
 
 ### ui5.control()
 
@@ -68,7 +68,7 @@ await expect(ui5.controls({ controlType: "sap.m.ColumnListItem" })).toHaveUI5Cou
 ui5.locator(selector: UI5Selector, options?: { timeout?: number }): Promise<Locator>
 ```
 
-A Playwright `Locator` for the control's DOM element. It first finds the control, so await it. The selector's [`interaction`](../locators#interaction) picks another element of the control, e.g. the inner `<input>`.
+A Playwright `Locator` for the control's DOM element. It first finds the control, so await it. The selector's [`interaction`](../locators#interaction) picks another element of the control, for example, the inner `<input>`.
 
 ```ts
 const go = await ui5.locator({ controlType: "sap.m.Button", properties: { text: "Go" } });
@@ -116,13 +116,13 @@ ui5.goTo(target: string | UI5Route, options?: { timeout?: number }): Promise<voi
 Navigates and waits until UI5 is idle:
 
 - **A path or URL** (`"/index.html"`): `page.goto`, relative to `baseURL`.
-- **A hash** (`"#Books-display"`, `"#/Books(1)"`): changes only the hash of the current page, or of `baseURL` if nothing is loaded yet. In a launchpad this is intent navigation.
+- **A hash** (`"#Books-display"`, `"#/Books(1)"`): changes only the hash of the current page, or of `baseURL` if nothing is loaded yet. In a launchpad or Work Zone, this is intent navigation.
 - **A route** (`UI5Route`): navigates with the app's router (`getRouter().navTo`), without reloading.
 
 ```ts
 interface UI5Route {
   route: string; // route name from the manifest
-  params?: Record<string, unknown>; // e.g. { key: "251" }
+  params?: Record<string, unknown>; // for example, { key: "251" }
   componentId?: string; // default: the only application component with a router
   replace?: boolean; // replace the history entry
   componentTargetInfo?: Record<string, unknown>; // for nested components
@@ -171,7 +171,7 @@ const text = await ui5.exec((prefix: string) => prefix + document.title, "Title:
 ui5.shell: UI5
 ```
 
-The same control API for the top-level frame, i.e. the launchpad or Work Zone shell (header, user menu). `ui5` itself stays in the app frame, so there is no switching back.
+The same control API for the top-level frame, that is, the launchpad or Work Zone shell (header, user menu). `ui5` itself stays in the app frame, so there is no switching back.
 
 ```ts
 await ui5.shell.control({ id: "userActionsMenuHeaderButton" }).press();
@@ -191,7 +191,7 @@ The Playwright `Frame` that runs the app, found with the [`appFrame`](../configu
 ui5.shellFrame(): Frame
 ```
 
-The top-level `Frame` (the launchpad, if there is one).
+The top-level `Frame` (the launchpad or Work Zone shell, if there is one).
 
 ### ui5.resetFrame()
 
@@ -199,7 +199,7 @@ The top-level `Frame` (the launchpad, if there is one).
 ui5.resetFrame(): void
 ```
 
-Forgets the app frame found last, so the next call looks for it again. `goTo()` with a string (path, URL or hash) does this already. You only need it if your own Playwright code replaces the app frame.
+Forgets the app frame found last, so the next call looks for it again. `goTo()` with a string (path, URL, or hash) does this already. You only need it if your own Playwright code replaces the app frame.
 
 ## Other
 
@@ -209,7 +209,7 @@ Forgets the app frame found last, so the next call looks for it again. `goTo()` 
 ui5.version(): Promise<string>
 ```
 
-The UI5 version of the app frame, e.g. `"1.136.0"`.
+The UI5 version of the app frame, for example, `"1.136.0"`.
 
 ### ui5.page
 
@@ -233,7 +233,7 @@ The [options](../configuration) with their defaults filled in.
 new UI5(page: Page, options?: UI5Options, baseURL?: string)
 ```
 
-Creates the control API for any `Page`, e.g. in a global setup. `goTo()` passes paths to `page.goto()`, which resolves them against the browser context's `baseURL`. The `baseURL` argument is only used for `goTo("#...")` on an empty page. Outside of a running test, calls don't create report steps. Ignoring `fetch` requests with [`ignoreAutoWaitUrls`](../configuration#ignoreautowaiturls) needs the fixture.
+Creates the control API for any `Page`, for example, in a global setup. `goTo()` passes paths to `page.goto()`, which resolves them against the browser context's `baseURL`. The `baseURL` argument is only used for `goTo("#...")` on an empty page. Outside of a running test, calls don't create report steps. Ignoring `fetch` requests with [`ignoreAutoWaitUrls`](../configuration#ignoreautowaiturls) needs the fixture.
 
 ```ts
 import { UI5 } from "@ahangl/playwright-ui5";
@@ -295,7 +295,7 @@ The global id of the control.
 control.className: string
 ```
 
-The UI5 class name, e.g. `"sap.m.Button"`.
+The UI5 class name, for example, `"sap.m.Button"`.
 
 ### control.methods
 
@@ -303,7 +303,7 @@ The UI5 class name, e.g. `"sap.m.Button"`.
 control.methods: readonly string[]
 ```
 
-The names of the control's public methods. Useful to find out what a control can do, see [Inspecting controls](../running#inspecting-controls).
+The names of the control's public methods. Useful to find out what a control can do, see [Inspecting controls](../running#inspect-controls).
 
 ### control.domRefId
 
@@ -329,7 +329,7 @@ The Playwright `Frame` the control lives in.
 control.getProperty<R>(name: string): Promise<R>
 ```
 
-The value of a property, e.g. `await button.getProperty("text")`.
+The value of a property, for example, `await button.getProperty("text")`.
 
 ### setProperty()
 
@@ -337,7 +337,7 @@ The value of a property, e.g. `await button.getProperty("text")`.
 control.setProperty(name: string, value: unknown): Promise<void>
 ```
 
-Sets a property, e.g. `await input.setProperty("value", "Poe")`. This doesn't fire events. To act like a user, use [`enterText()`](#entertext).
+Sets a property, for example, `await input.setProperty("value", "Poe")`. This doesn't fire events. To act like a user, use [`enterText()`](#entertext).
 
 ### getAggregation()
 
@@ -357,7 +357,7 @@ const items = await table.getAggregation<RemoteControl[]>("items");
 control.getBindingContextPath(modelName?: string): Promise<string | undefined>
 ```
 
-The path of the control's binding context (of the default model or of `modelName`), e.g. `"/Books(201)"`. `undefined` if the control has none. To wait for a path, use [`toHaveUI5BindingPath()`](./expect#tohaveui5bindingpath).
+The path of the control's binding context (of the default model or of `modelName`), for example, `"/Books(201)"`. `undefined` if the control has none. To wait for a path, use [`toHaveUI5BindingPath()`](./expect#tohaveui5bindingpath).
 
 ### call()
 
@@ -371,10 +371,10 @@ Calls a method by name. The same as `control[method](...args)`. Useful when the 
 
 ```ts
 control.locator(): Locator // on a RemoteControl
-chain.locator(): Promise<Locator> // on a chain, e.g. ui5.control(...).locator()
+chain.locator(): Promise<Locator> // on a chain, for example, ui5.control(...).locator()
 ```
 
-A Playwright `Locator` for the control's root DOM element, e.g. for screenshots or Playwright's own matchers. [`ui5.locator()`](#ui5-locator) with [`interaction`](../locators#interaction) gives other elements of the control.
+A Playwright `Locator` for the control's root DOM element, for example, for screenshots or Playwright's own matchers. [`ui5.locator()`](#ui5-locator) with [`interaction`](../locators#interaction) gives other elements of the control.
 
 ```ts
 await expect(go.locator()).toBeVisible();
@@ -401,7 +401,7 @@ const text = await go.exec((control: Button, suffix: string) => control.getText(
 control.reload(): Promise<RemoteControl>
 ```
 
-Reads id, class and DOM reference again and returns a new `RemoteControl`, e.g. after the control was re-rendered with another DOM element. Method calls don't need it, they look up the control by id anyway.
+Reads id, class and DOM reference again and returns a new `RemoteControl`, for example, after the control was re-rendered with another DOM element. Method calls don't need it, they look up the control by id anyway.
 
 ## Control actions
 
@@ -411,7 +411,7 @@ Reads id, class and DOM reference again and returns a new `RemoteControl`, e.g. 
 control.press(options?: { native?: boolean }): ControlChain<T>
 ```
 
-Presses the control with OPA's `Press` action. It waits until the control is visible, enabled, not busy and not covered by a popup, and picks the right inner element (e.g. the icon of a `SearchField`). With `native: true` it's a real Playwright click on the control's DOM element.
+Presses the control with OPA's `Press` action. It waits until the control is visible, enabled, not busy and not covered by a popup, and picks the right inner element (for example, the icon of a `SearchField`). With `native: true` it's a real Playwright click on the control's DOM element.
 
 It starts right away and returns a chain on the same control: `await go.press().getText()`. Awaiting it rejects if the press failed.
 
@@ -471,7 +471,7 @@ const title = await context.getProperty("title");
 object.className: string
 ```
 
-The UI5 class name, e.g. `"sap.ui.model.odata.v4.Context"`.
+The UI5 class name, for example, `"sap.ui.model.odata.v4.Context"`.
 
 ### object.methods
 

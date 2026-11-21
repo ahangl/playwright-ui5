@@ -68,7 +68,7 @@ Opens `url`, logs in with the provider and, with `storageStatePath`, saves cooki
 | `provider`         | `ias()`                                | The [`AuthProvider`](#custom-idp) that performs the login.                              |
 | `credentials`      | [`credentialsFromEnv()`](#credentials) | `{ username, password }`.                                                               |
 | `timeout`          | `60000`                                | Max. ms for the whole login.                                                            |
-| `storageStatePath` |                                        | Where to save the session, e.g. `".auth/user.json"`. Omit to only log in.               |
+| `storageStatePath` |                                        | Where to save the session, for example, `".auth/user.json"`. Omit to only log in.       |
 
 A relative `url` fails right away with `playwright-ui5: login() needs an absolute url, got "..."`.
 
@@ -86,21 +86,21 @@ ias(options?: IasOptions): AuthProvider
 - Failing fast with the IdP's error message when credentials are wrong.
 - An existing valid session: it opens the URL and skips the form.
 
-| Option                  | Default                  | Description                                                                       |
-| ----------------------- | ------------------------ | --------------------------------------------------------------------------------- |
-| `idpDomain`             |                          | IdP to pick on the XSUAA selection page, e.g. `"mytenant.accounts.ondemand.com"`. |
-| `usernameSelector`      | `#j_username`            | Username field.                                                                   |
-| `passwordSelector`      | `#j_password`            | Password field.                                                                   |
-| `submitSelector`        | `#logOnFormSubmit`       | Submit button.                                                                    |
-| `errorSelector`         | IAS error elements       | Elements whose text is reported when the login fails.                             |
-| `skipPasswordlessSetup` | `true`                   | Skip the "set up passwordless / biometric authentication" prompt.                 |
-| `isLoggedIn`            | back on the app's origin | `(page, ctx) => boolean \| Promise<boolean>`: decides when the login is complete. |
+| Option                  | Default                  | Description                                                                               |
+| ----------------------- | ------------------------ | ----------------------------------------------------------------------------------------- |
+| `idpDomain`             |                          | IdP to pick on the XSUAA selection page, for example, `"mytenant.accounts.ondemand.com"`. |
+| `usernameSelector`      | `#j_username`            | Username field.                                                                           |
+| `passwordSelector`      | `#j_password`            | Password field.                                                                           |
+| `submitSelector`        | `#logOnFormSubmit`       | Submit button.                                                                            |
+| `errorSelector`         | IAS error elements       | Elements whose text is reported when the login fails.                                     |
+| `skipPasswordlessSetup` | `true`                   | Skip the "set up passwordless / biometric authentication" prompt.                         |
+| `isLoggedIn`            | back on the app's origin | `(page, ctx) => boolean \| Promise<boolean>`: decides when the login is complete.         |
 
 ```ts
 await login(page, { url, provider: ias({ idpDomain: "mytenant.accounts.ondemand.com" }) });
 ```
 
-MFA is not supported. Use a technical test user without MFA.
+MFA isn't supported. Use a technical test user without MFA.
 
 ## Custom IdP
 
@@ -136,7 +136,7 @@ export const myIdp: AuthProvider = {
 };
 ```
 
-## Basic Authentication
+## Basic authentication
 
 Use Playwright's built-in `httpCredentials`:
 

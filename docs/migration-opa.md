@@ -1,5 +1,5 @@
 ---
-description: "Move OPA5 tests to playwright-ui5: waitFor, actions, matchers, journeys and the Fiori elements test library."
+description: "Move OPA5 tests to playwright-ui5: waitFor, actions, matchers, journeys, and the Fiori elements test library."
 ---
 
 # Migration from OPA
@@ -15,7 +15,7 @@ What changes:
 
 - Tests are `async` functions. Every statement needs `await`.
 - Code in the test can't touch UI5 objects directly. Control methods are called remotely (`await input.getValue()`), and code that must run in the browser goes into `exec`.
-- The app has to be served over HTTP. Playwright opens it like a user (see [Starting the app](#starting-the-app)).
+- The app has to be served over HTTP. Playwright opens it like a user (see [Starting the app](#start-the-app)).
 
 ## Concept mapping
 
@@ -57,7 +57,7 @@ Matchers become fields of the selector. See [Locators](./locators) for all field
 | `new AggregationEmpty({ name: "items" })`                   | `expect(await ui5.control(TABLE).getItems()).toHaveLength(0)`      |
 | function matcher `(control) => ...`                         | `(await ui5.controls(selector))` and filter in the test, or `exec` |
 
-`Ancestor`, `Descendant` and `Sibling` take a control instance in OPA. Here they take a selector for that control.
+`Ancestor`, `Descendant`, and `Sibling` take a control instance in OPA. Here they take a selector for that control.
 
 ## Actions
 
@@ -225,7 +225,7 @@ test("opens a book", async ({ ui5, fe }) => {
 - Custom page extensions (the second argument of `new ListReport(definition, extension)`) aren't supported. Move them into a page class as shown in [Page objects](#page-objects).
 - The functions themselves are SAP's, see the [`fe` reference](./api/fe#functions).
 
-## Starting the app
+## Start the app
 
 OPA usually starts the app from a test page in the app (`test/flpSandbox.html`, `test/integration/opaTests.qunit.html`), often with a mock server. Playwright needs a URL:
 
@@ -243,9 +243,9 @@ OPA usually starts the app from a test page in the app (`test/flpSandbox.html`, 
   });
   ```
 
-- For mock data, add [`@sap-ux/ui5-middleware-fe-mockserver`](https://www.npmjs.com/package/@sap-ux/ui5-middleware-fe-mockserver) to the `ui5.yaml` that `ui5 serve` uses. Or open the HTML page that already starts your mock server, e.g. `await ui5.goTo("/test/flpSandbox.html#Books-display")`.
+- For mock data, add [`@sap-ux/ui5-middleware-fe-mockserver`](https://www.npmjs.com/package/@sap-ux/ui5-middleware-fe-mockserver) to the `ui5.yaml` that `ui5 serve` uses. Or open the HTML page that already starts your mock server, for example, `await ui5.goTo("/test/flpSandbox.html#Books-display")`.
 - An FLP sandbox page works too: the app iframe or the embedded app is detected automatically.
 
 ## Keep or move?
 
-OPA is still the right tool for integration tests that need the app's internals in the same window (mocking modules, stubbing with Sinon, component-level tests). playwright-ui5 fits end-to-end tests: real browsers, real backends or SAP Build Work Zone, login, several apps, and Playwright's reports and traces. Both can live side by side.
+OPA is still the right tool for integration tests that need the app's internals in the same window (mocking modules, stubbing with Sinon, component-level tests). playwright-ui5 fits end-to-end tests: real browsers, real backends, or SAP Build Work Zone, login, several apps, and Playwright's reports and traces. Both can live side by side.
