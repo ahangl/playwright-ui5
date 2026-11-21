@@ -1,16 +1,16 @@
 /**
  * UI5 control selector, as understood by `sap/ui/test/RecordReplay` (the same format wdi5 and
  * UI5 OPA declarative matchers use). String values can be replaced by RegExp objects where UI5
- * supports it (e.g. `id`, `properties`).
+ * supports it (for example, `id`, `properties`).
  */
 export interface UI5Selector {
   /** Global control id, or a RegExp. With `viewName`/`viewId` it is the id relative to the view. */
   id?: string | RegExp;
   viewName?: string;
   viewId?: string;
-  /** Fully qualified control class, e.g. `"sap.m.Button"`. */
+  /** Fully qualified control class, for example, `"sap.m.Button"`. */
   controlType?: string;
-  /** Property values the control must have, e.g. `{ text: "Save" }`. */
+  /** Property values the control must have, for example, `{ text: "Save" }`. */
   properties?: Record<string, unknown>;
   bindingPath?: {
     path?: string;
@@ -39,7 +39,7 @@ export interface UI5Selector {
   searchOpenDialogs?: boolean;
   /**
    * Which DOM element of the control `locator()` and `press({ native: true })` use (as in wdi5 /
-   * RecordReplay): `"root"` (default), `"focus"` (e.g. the inner `<input>`), `"press"`, `"auto"`,
+   * RecordReplay): `"root"` (default), `"focus"` (for example, the inner `<input>`), `"press"`, `"auto"`,
    * or `{ idSuffix }` for the element with id `<control id>-<idSuffix>`.
    */
   interaction?: "root" | "focus" | "press" | "auto" | { idSuffix: string };

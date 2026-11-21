@@ -173,7 +173,7 @@ export async function isFrameStillValid(page: Page, frame: Frame, options: Resol
   if (!info.ui5) return false;
   if (frame === main && options.appFrame === "auto" && info.ushell) {
     // The launchpad frame was chosen (home page / embedded app). Still right only if no app iframe
-    // has opened meanwhile and the launchpad still shows its home page or an embedded app - e.g.
+    // has opened meanwhile and the launchpad still shows its home page or an embedded app - for example
     // after navigating to an intent, the app iframe may not even exist yet.
     if (await launchpadAppFrame(page, options.launchpadIframeSelector)) return false;
     const shell = await shellState(main);

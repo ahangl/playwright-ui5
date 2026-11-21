@@ -231,7 +231,7 @@ const BRIDGE_VERSION = "1";
 
   /**
    * RecordReplay returns the DOM element it would interact with - by default ("auto") that can be
-   * an element of a child control (e.g. the growing trigger of a sap.m.Table). Asking for the root
+   * an element of a child control (for example, the growing trigger of a sap.m.Table). Asking for the root
    * element makes the DOM -> control mapping return the matched control itself.
    */
   function rootSelector(sel: any): any {

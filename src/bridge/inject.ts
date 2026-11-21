@@ -75,7 +75,7 @@ export async function ensureBridge(frame: Frame, timeout: number): Promise<void>
 
 /**
  * Calls `window.__pwui5.<method>(...args)` in the frame. Injects the bridge first if needed
- * (e.g. after a reload).
+ * (for example, after a reload).
  */
 export async function callBridge<T>(frame: Frame, method: string, args: unknown[], timeout: number): Promise<T> {
   const invoke = () =>

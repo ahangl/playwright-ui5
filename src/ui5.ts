@@ -21,7 +21,7 @@ import { cleanStack, formatArgs, step, withoutSteps } from "./util/step";
 export interface UI5Route {
   /** Route name from the manifest (`sap.ui5/routing/routes`). */
   route: string;
-  /** Route parameters, e.g. `{ key: "251" }` for the pattern `Books({key})`. */
+  /** Route parameters, for example, `{ key: "251" }` for the pattern `Books({key})`. */
   params?: Record<string, unknown>;
   /** Id of the component whose router is used. Default: the only application component with a router. */
   componentId?: string;
@@ -97,7 +97,7 @@ export class UI5 {
     ));
   }
 
-  /** Forget the resolved app frame, e.g. after navigating to another app. */
+  /** Forget the resolved app frame, for example, after navigating to another app. */
   resetFrame(): void {
     this.cachedFrame = undefined;
   }

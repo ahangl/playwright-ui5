@@ -8,7 +8,7 @@ import { contextOf, createRemoteControl, fromBrowser, toBrowser, UI5Control, typ
 export const CHAIN = Symbol.for("playwright-ui5.chain");
 
 export interface ChainInternals {
-  /** Human-readable description, e.g. `ui5.control({...}).getItems(0)`. */
+  /** Human-readable description, for example, `ui5.control({...}).getItems(0)`. */
   readonly description: string;
   /** `"controls"` for `ui5.controls()` queries (resolve to an array of controls). */
   readonly kind: "chain" | "controls";
@@ -29,13 +29,13 @@ type Start = { selector: UI5Selector } | { ref: Ref };
 export interface ChainSource {
   /**
    * Frame/timeouts and the start of the chain. Called when the chain runs; it may first wait for
-   * something (e.g. a `press()` that the chain continues after).
+   * something (for example, a `press()` that the chain continues after).
    */
   resolve(timeout?: number): Promise<{ ctx: RemoteContext; start: Start }>;
-  /** e.g. `ui5.control({"controlType":"sap.m.Button"})` or `sap.m.Button#__button0` */
+  /** for example `ui5.control({"controlType":"sap.m.Button"})` or `sap.m.Button#__button0` */
   label: string;
   /**
-   * The value of the chain while it has no steps, without a step of its own - e.g. the control an
+   * The value of the chain while it has no steps, without a step of its own - for example the control an
    * action (`press()`) was done on. Only used for `await chain`; re-runs (`expect` matchers) always
    * go to the browser.
    */
@@ -139,7 +139,7 @@ async function valueOf(source: ChainSource, site: Error): Promise<unknown> {
 
 /**
  * The control after an action, freshly described (the action may have re-rendered it). If the
- * action destroyed it (e.g. the OK button of a dialog), the old description is kept.
+ * action destroyed it (for example, the OK button of a dialog), the old description is kept.
  */
 export function refreshed(control: UI5Control): Promise<UI5Control> {
   return withoutSteps(() => control.reload()).catch(() => control);
@@ -192,7 +192,7 @@ export function createChain(source: ChainSource, steps: Step[], site: Error): an
         if (HELPERS.has(prop)) {
           return (...args: unknown[]) => {
             const helperSite = new Error();
-            // One step for resolving the chain and the helper (e.g. `....getBindingContextPath()`).
+            // One step for resolving the chain and the helper (for example, `....getBindingContextPath()`).
             return step(
               `${internals.description}.${prop}(${formatArgs(args)})`,
               () => withoutSteps(async () => ((await control(prop)) as any)[prop](...args)),
@@ -248,7 +248,7 @@ export function chainFrom(ctx: RemoteContext, ref: Ref, label: string, method: s
 
 /**
  * A chain on a control that continues after `before` (an action that already started and
- * resolves to the control afterwards), e.g. the result of `control.press()`.
+ * resolves to the control afterwards), for example, the result of `control.press()`.
  */
 export function chainAfter(label: string, before: Promise<UI5Control>): any {
   return createChain(
@@ -267,7 +267,7 @@ export function chainAfter(label: string, before: Promise<UI5Control>): any {
 
 /**
  * Result of `ui5.controls()`: awaitable like a promise (cached), and re-runnable by the `expect`
- * matchers, e.g. `await expect(ui5.controls(ROW)).toHaveUI5Count(2)`.
+ * matchers, for example, `await expect(ui5.controls(ROW)).toHaveUI5Count(2)`.
  */
 export function createControlsQuery(
   ctx: (timeout?: number) => Promise<RemoteContext>,

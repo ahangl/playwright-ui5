@@ -209,7 +209,7 @@ class Journey {
           );
         }
         // OPA's autoWait waits before each action, not after the last one: the statement would return
-        // while e.g. a save or a navigation is still running. Skip it if the action removed the frame.
+        // while for example a save or a navigation is still running. Skip it if the action removed the frame.
         if (kind !== "then" && this.waitAfter && !frame.isDetached()) {
           await callBridge(frame, "waitForUI5", [timeout], timeout);
         }

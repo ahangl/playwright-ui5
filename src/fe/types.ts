@@ -14,7 +14,7 @@ import type Shell from "sap/fe/test/Shell";
 export interface FioriElementsPageDefinition {
   /** `sap.app.id` from the manifest. */
   appId: string;
-  /** Id of the routing target in the manifest, e.g. `"BooksList"` / `"BooksObjectPage"`. */
+  /** Id of the routing target in the manifest, for example, `"BooksList"` / `"BooksObjectPage"`. */
   componentId: string;
   entitySet?: string;
   contextPath?: string;
@@ -27,7 +27,7 @@ export type FioriElementsPageConfig =
   | { Shell: Record<string, never> };
 
 /**
- * Page objects by name, e.g.
+ * Page objects by name, for example
  * `{ onTheMainPage: { ListReport: {...} }, onTheDetailPage: { ObjectPage: {...} }, onTheShell: { Shell: {} } }`.
  */
 export type FioriElementsPages = Record<string, FioriElementsPageConfig>;
@@ -103,7 +103,7 @@ export interface UntypedFioriElementsChain {
   [method: string]: any;
 }
 
-/** Keeps up to 4 overloads of a sap.fe.test method (e.g. both `iChangeRow` signatures). */
+/** Keeps up to 4 overloads of a sap.fe.test method (for example, both `iChangeRow` signatures). */
 type ChainMethod<F, T> = F extends {
   (...args: infer A1): infer R1;
   (...args: infer A2): infer R2;

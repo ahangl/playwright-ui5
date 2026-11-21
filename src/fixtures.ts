@@ -18,7 +18,7 @@ export interface UI5Fixtures {
 }
 
 export interface UI5TestOptions {
-  /** Options for the `ui5`/`fe` fixtures, e.g. `use: { ui5Options: { appFrame: "auto" } }`. */
+  /** Options for the `ui5`/`fe` fixtures, for example, `use: { ui5Options: { appFrame: "auto" } }`. */
   ui5Options: UI5Options;
 }
 

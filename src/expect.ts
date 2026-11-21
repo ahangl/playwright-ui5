@@ -43,7 +43,7 @@ function matches(expected: unknown, value: unknown): boolean {
 
 /**
  * Reads a value until `check` passes (or fails, with `.not`) or the timeout is reached. Read errors
- * (e.g. the control does not exist) count as "no match" and are retried.
+ * (for example, the control does not exist) count as "no match" and are retried.
  */
 async function retry<T>(
   state: ExpectMatcherState,

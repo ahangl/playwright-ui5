@@ -4,7 +4,7 @@ import type { AuthProvider, LoginContext } from "./types";
 export interface IasOptions {
   /**
    * If the XSUAA login page offers several identity providers, the IdP to pick
-   * (clicks `a[href*="idp=<idpDomain>"]`), e.g. `"mytenant.accounts.ondemand.com"`.
+   * (clicks `a[href*="idp=<idpDomain>"]`), for example, `"mytenant.accounts.ondemand.com"`.
    */
   idpDomain?: string;
   /** Default: `#j_username` */

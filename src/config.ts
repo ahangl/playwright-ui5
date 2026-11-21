@@ -27,7 +27,7 @@ export interface UI5Options {
    */
   launchpadIframeSelector?: string;
   /**
-   * Requests (XHR and fetch) whose URL matches one of these patterns are not waited for, e.g.
+   * Requests (XHR and fetch) whose URL matches one of these patterns are not waited for, for example
    * long polling or push channels that never finish. Strings are regular expression sources (like
    * wdi5's `ignoreAutoWaitUrls`). Default: `[]`.
    *

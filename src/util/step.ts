@@ -58,7 +58,7 @@ export function cleanStack<E>(error: E): E {
 /**
  * Runs `body` as a Playwright test step attributed to the caller's source line (so it shows
  * up nicely in reports and traces and errors point at the test code), or plainly when called
- * outside of a running test (e.g. in a global setup).
+ * outside of a running test (for example, in a global setup).
  */
 export async function step<T>(title: string, body: () => Promise<T>, site?: Error): Promise<T> {
   let insideTest = true;
@@ -78,11 +78,11 @@ export async function step<T>(title: string, body: () => Promise<T>, site?: Erro
 const MAX_TITLE = 150;
 
 function shortTitle(title: string): string {
-  const chars = Array.from(title); // code points, so that e.g. emojis are not cut in half
+  const chars = Array.from(title); // code points, so that for example emojis are not cut in half
   return chars.length > MAX_TITLE ? chars.slice(0, MAX_TITLE - 1).join("") + "…" : title;
 }
 
-/** Step title of `enterText`, e.g. `ui5: enter "Poe" into sap.m.Input#id`. */
+/** Step title of `enterText`, for example, `ui5: enter "Poe" into sap.m.Input#id`. */
 export function enterTextTitle(text: unknown, target: string): string {
   return `ui5: enter ${JSON.stringify(String(text))} into ${target}`;
 }
@@ -90,7 +90,7 @@ export function enterTextTitle(text: unknown, target: string): string {
 const quiet = new AsyncLocalStorage<boolean>();
 
 /**
- * Runs `fn` without creating steps for the library calls inside it, e.g. for the attempts of a
+ * Runs `fn` without creating steps for the library calls inside it, for example, for the attempts of a
  * retrying matcher or for the lookup that belongs to an action that already has its own step.
  */
 export function withoutSteps<T>(fn: () => T): T {

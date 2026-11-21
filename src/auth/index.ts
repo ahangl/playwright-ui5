@@ -7,7 +7,7 @@ export type { AuthProvider, Credentials, LoginContext } from "./types";
 
 /**
  * Reads credentials from environment variables `<prefix>_USERNAME` and `<prefix>_PASSWORD`
- * (default prefix `UI5`). Load a `.env` file in your playwright.config.ts (e.g. `import "dotenv/config"`)
+ * (default prefix `UI5`). Load a `.env` file in your playwright.config.ts (for example, `import "dotenv/config"`)
  * if you keep them there - never commit them.
  */
 export function credentialsFromEnv(prefix = "UI5"): Credentials {
@@ -33,7 +33,7 @@ export interface LoginOptions {
   timeout?: number;
   /**
    * Where to store cookies & local storage for reuse via Playwright's `storageState`
-   * (e.g. `".auth/user.json"`). Omit to only log in.
+   * (for example, `".auth/user.json"`). Omit to only log in.
    */
   storageStatePath?: string;
 }

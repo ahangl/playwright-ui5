@@ -132,7 +132,7 @@ export type ControlsQuery<T = unknown> = Promise<RemoteControl<T>[]>;
 
 /**
  * A UI5 control living in the browser. Besides the helpers of {@link UI5Control}, every public
- * method of the control can be called directly and returns a promise, e.g. `await button.getText()`.
+ * method of the control can be called directly and returns a promise, for example, `await button.getText()`.
  *
  * Pass the UI5 class as type parameter for typed methods: `ui5.control<Button>({...})`
  * (types from `@sapui5/types` / `@openui5/types`).
@@ -200,7 +200,7 @@ function withDynamicMethods<T extends { methods: readonly string[]; call(name: s
 export class UI5Control {
   /** Global id of the control. */
   readonly id: string;
-  /** Fully qualified UI5 class name, e.g. `sap.m.Button`. */
+  /** Fully qualified UI5 class name, for example, `sap.m.Button`. */
   readonly className: string;
   /** Id of the control's root DOM element (null while not rendered). */
   readonly domRefId: string | null;
@@ -268,10 +268,10 @@ export class UI5Control {
 
   /**
    * Presses the control the way OPA does (`sap/ui/test/actions/Press` via RecordReplay), which
-   * picks the right inner DOM element (e.g. the search icon of a SearchField).
+   * picks the right inner DOM element (for example, the search icon of a SearchField).
    * With `{ native: true }` a real Playwright click on the control's DOM element is done instead.
    *
-   * Starts right away. Returns a chain on the same control that continues after the press, e.g.
+   * Starts right away. Returns a chain on the same control that continues after the press, for example
    * `await button.press().getText()`; awaiting it rejects if the press failed.
    */
   press(options: { native?: boolean } = {}): ControlChain {
@@ -296,7 +296,7 @@ export class UI5Control {
    * Enters text the way OPA does (`EnterText` action: focuses, types, fires change).
    * `clearTextFirst` defaults to true.
    *
-   * Starts right away. Returns a chain on the same control that continues afterwards, e.g.
+   * Starts right away. Returns a chain on the same control that continues afterwards, for example
    * `await input.enterText("Poe").getValue()`.
    */
   enterText(text: string, options: { clearTextFirst?: boolean } = {}): ControlChain {
@@ -325,7 +325,7 @@ export class UI5Control {
     });
   }
 
-  /** Re-reads id/className/DOM ref (e.g. after re-rendering) and returns a fresh instance. */
+  /** Re-reads id/className/DOM ref (for example, after re-rendering) and returns a fresh instance. */
   reload(): Promise<RemoteControl> {
     return step(`${this.className}#${this.id}.reload()`, async () => {
       const d = await callBridge<ControlDescriptor>(
