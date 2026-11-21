@@ -9,6 +9,8 @@ export default defineConfig({
     "UI5-aware end-to-end testing for Playwright: control API, retrying assertions, Fiori elements test library",
   base,
   cleanUrls: true,
+  // The style guide and page templates are for authors, not part of the site.
+  srcExclude: ["STYLE.md", "_templates/**"],
   lastUpdated: false,
   vite: {
     plugins: [llmstxt({ excludeIndexPage: false })]
