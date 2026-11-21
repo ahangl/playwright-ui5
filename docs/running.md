@@ -1,33 +1,24 @@
+---
+description: "Run and debug playwright-ui5 tests, read report steps and error messages, and inspect controls."
+---
+
 # Running and debugging
 
-playwright-ui5 runs inside Playwright, so all of Playwright's tooling works.
-
-## Running
+Tests run with Playwright's test runner, so all of Playwright's tooling works:
 
 ```bash
-npx playwright test                        # all tests, headless
-npx playwright test tests/books.spec.ts    # one file
-npx playwright test -g "search books"      # tests whose title matches
-npx playwright test --project=workzone     # one project
-npx playwright test --headed               # with a visible browser
-npx playwright test --ui                   # UI mode: watch, time travel, pick locators
+npx playwright test            # all tests
+npx playwright test --ui       # UI mode: watch, time travel, pick locators
+npx playwright show-report     # HTML report of the last run
 ```
 
-Tests in one file run in order. Files run in parallel workers; set `fullyParallel: true` to also parallelize tests within a file, or `test.describe.configure({ mode: "serial" })` for tests that depend on each other.
+See Playwright's docs on [running tests](https://playwright.dev/docs/running-tests), [debugging](https://playwright.dev/docs/debug), the [trace viewer](https://playwright.dev/docs/trace-viewer) and [parallelism](https://playwright.dev/docs/test-parallel).
 
-## Debugging
-
-```bash
-npx playwright test --debug                # Playwright Inspector, step through the test
-npx playwright show-report                 # HTML report of the last run
-npx playwright show-trace test-results/<test>/trace.zip
-```
-
-### Steps in the report and trace
+## Steps in the report and trace
 
 Every awaited UI5 call appears as one step in the Playwright report and trace. The step is titled like the call and located at your test line:
 
-```
+```txt
 ui5.control({"controlType":"sap.m.Table"}).getItems(0).getBindingContextPath()
 ui5: press ui5.control({"controlType":"sap.m.Button","properties":{"text":"Go"}})
 ```
@@ -40,13 +31,17 @@ ui5: press ui5.control({"controlType":"sap.m.Button","properties":{"text":"Go"}}
 
 Use `trace: "retain-on-failure"` to keep a trace with DOM snapshots, network and console for failing tests.
 
-### Error messages
+## Error messages
 
-Errors point at your test line, not at library internals.
+Errors point at your test line, not at library internals. The most common one is a selector that matches nothing:
+
+```txt
+playwright-ui5: no control found for selector {"controlType":"sap.m.Button","properties":{"text":"Go"}} within 15000ms
+```
 
 A failing chain shows the whole chain, the failing step and what the steps before it returned:
 
-```
+```txt
 playwright-ui5: ui5.control({"controlType":"sap.m.Table"}).getItems(0).getNope() failed at .getNope():
   'getNope' is not a function on sap.m.ColumnListItem
   ✔ ui5.control({"controlType":"sap.m.Table"}) → sap.m.Table#…
@@ -54,11 +49,11 @@ playwright-ui5: ui5.control({"controlType":"sap.m.Table"}).getItems(0).getNope()
   ✘ getNope()
 ```
 
-A failing Fiori elements statement contains the statement, OPA's diagnostics and the last checks that passed.
+A failing Fiori elements statement contains the statement, OPA's diagnostics and the last OPA log entries.
 
-If no frame with the app is found, the error lists what the helper saw (launchpad iframes, whether the main frame runs UI5 or a launchpad) and suggests setting `ui5Options.appFrame`.
+If no frame with the app is found, the error lists what playwright-ui5 saw (launchpad iframes, whether the main frame runs UI5 or a launchpad) and suggests setting `ui5Options.appFrame`.
 
-### Inspecting controls
+## Inspecting controls
 
 ```ts
 const control = await ui5.control(selector);

@@ -1,14 +1,14 @@
-# Fiori elements V4 test library
+---
+description: "Run SAP's Fiori elements V4 test library (sap.fe.test) from Playwright tests with the fe fixture."
+---
+
+# Test library (sap.fe.test)
 
 ::: warning Only for Fiori elements V4 apps
-The `fe` fixture works only in apps built with the Fiori elements V4 templates (`sap.fe.templates`, OData V4). For freestyle apps and Fiori elements V2 apps, use the [control API](./usage). It works in every UI5 app, see [below](#fiori-elements-v2-and-freestyle-apps).
+The `fe` fixture works only in apps built with the Fiori elements V4 templates (`sap.fe.templates`, OData V4). For freestyle apps and Fiori elements V2 apps, use the [control API](./usage), which works in every UI5 app ([more](#fiori-elements-v2-and-freestyle-apps)).
 :::
 
 The `fe` fixture runs SAP's official test library for Fiori elements V4 apps ([`sap.fe.test`](https://ui5.sap.com/#/api/sap.fe.test)) from Playwright tests. It is the counterpart of wdi5's "Test Library Integration".
-
-::: tip Which functions are there?
-The functions (`iChangeFilterField`, `iCheckRows`, `iPressRow`, ...) are SAP's, not this library's. They are documented in the UI5 API reference under [**`sap.fe.test`**](https://ui5.sap.com/#/api/sap.fe.test). The [`fe` reference](./api/fe#functions) shows which SAP reference page belongs to which part of a statement.
-:::
 
 ## Why use the test library?
 
@@ -22,7 +22,6 @@ Use the control API for anything the test library doesn't cover. Both can be mix
 
 Prerequisites:
 
-- A Fiori elements app for OData V4. V2 (`sap.suite.ui.generic.template`) is not supported.
 - `sap/fe/test` is loaded from the app's own UI5 bootstrap, so its version always matches the app.
 
 ```ts
@@ -51,27 +50,22 @@ Each page is `{ ListReport | ObjectPage | Shell: settings }`. `appId` is `sap.ap
 
 ## Calling test functions
 
-`fe.init(pages, { timeout?, waitAfter? })` returns typed `Given` / `When` / `Then` roots:
+`fe.init(pages, { timeout?, waitAfter? })` returns typed `Given` / `When` / `Then` roots. Open the app with `ui5.goTo` before the first statement.
 
 - Each statement is recorded and only runs when you `await` it. Await every statement.
 - Statements can be chained with `.and`, as in OPA.
-- A `When` statement waits until UI5 is idle after its last action (so does `Given`). After `await When.onTheDetailPage.onFooter().iExecuteSave()` the object is saved, and the next step, also a Playwright locator, sees the result. `{ waitAfter: false }` or [`ui5Options.feWaitAfter`](./api/configuration#fewaitafter) turns it off.
-- A failing statement throws an error. The message contains the statement, OPA's diagnostics and the last checks that passed, and it points at your test line.
+- A `When` statement waits until UI5 is idle after its last action (so does `Given`). After `await When.onTheDetailPage.onFooter().iExecuteSave()` the object is saved, and the next step, also a Playwright locator, sees the result. `{ waitAfter: false }` or [`ui5Options.feWaitAfter`](./configuration#fewaitafter) turns it off. `Then` statements wait before each check, like OPA.
+- A failing statement throws an error. The message contains the statement, OPA's diagnostics and the last OPA log entries, and it points at your test line.
 - Each statement appears as a step in the Playwright report and trace.
 - The timeout per statement is `ui5Options.feTimeout` (default 30 s).
 
 ### Naming
 
-The test library follows OPA's naming: actions start with `i<Do>` (`iPressRow`, `iExecuteSearch`) and are called on `When`. Assertions start with `iCheck` / `iSee` and are called on `Then`. `Given` is for arrangements. Open the app with `ui5.goTo` before the first statement.
+The test library follows OPA's naming: actions start with `i<Do>` (`iPressRow`, `iExecuteSearch`) and are called on `When`. Assertions start with `iCheck` / `iSee` and are called on `Then`. `Given` is for arrangements.
 
 ## Available functions
 
-A statement has three parts: `When` / `Then`, your page name, and the functions of the page or of one of its areas. Each area has its own page in the UI5 API reference:
-
-```ts
-await When.onTheMainPage.onTable().iPressRow({ "Book ID": "251" });
-//    ^When  ^your page     ^area     ^function: sap.fe.test.api.TableActions
-```
+A statement has four parts: `When` / `Then`, your page name, an area of the page such as `onTable()`, and the function ([details](./api/fe#statements)). Each area has its own page in the UI5 API reference, e.g. `onTable()` on `When` is [`TableActions`](https://ui5.sap.com/#/api/sap.fe.test.api.TableActions).
 
 The fastest way to find a function:
 
@@ -97,21 +91,13 @@ await When.onTheDetailPage.iGoToSection("Reviews"); // also renders the tables o
 await When.onTheDetailPage.onTable("Reviews").iExecuteCreate();
 ```
 
-`.and.iExecuteSearch()` presses the **Go** button of the filter bar. A filter bar in live mode has no Go button, see [Troubleshooting](#troubleshooting).
+A filter bar in live mode has no Go button for `iExecuteSearch()`, see [Troubleshooting](./fe-troubleshooting#the-table-isn-t-filtered-after-ichangesearchfield).
 
 Notes on the typings and arguments:
 
 - Without `@sapui5/types` the chains are untyped: any function name compiles, and they work the same. Only `onTable()` is typed (see below).
-- SAP's typings are sometimes stricter than the runtime. For example, `iCheckRows(5)` is typed as `iCheckRows({}, 5)`.
-- **`onTable(table?)`**: without an argument, the page's default table is used. A list report with one table needs no identifier. Otherwise pass the table's header title or `{ property, qualifier? }`:
-
-  ```ts
-  await Then.onTheMainPage.onTable().iCheckRows({}, 2); // the only table of the page
-  await When.onTheDetailPage.onTable("Reviews").iExecuteCreate(); // by header title
-  await Then.onTheDetailPage.onTable({ property: "reviews" }).iCheckRows({}, 1); // by navigation property
-  ```
-
-  An empty object is a type error, also without `@sapui5/types`: `onTable({})` would build the table id `fe::table::undefined::LineItem`, and the statement would time out. `onTable()` compiles with every version of `@sapui5/types`, also before 1.150, where SAP declares the identifier as required.
+- SAP's typings are sometimes stricter than the runtime. For example, `iCheckRows(5)` works at runtime but is a type error; write `iCheckRows({}, 5)`.
+- **`onTable(table?)`**: on a list report with one table, call it without an argument. On an object page, pass the table's header title or `{ property, qualifier? }`. Details: [`onTable()`](./api/fe#ontable).
 
 - **`iCheckTitle(title, description?)`** compares the whole text, not a part of it. Omit the description or pass `undefined` to skip it. `iCheckTitle(title, "")` fails when the header has no description. For a partial match, use the control API:
 
@@ -121,22 +107,19 @@ Notes on the typings and arguments:
   // title contains "Raven"
   await expect(
     ui5.control({
-      controlType: "sap.m.Label",
+      controlType: "sap.m.Title",
       ancestor: { controlType: "sap.uxap.ObjectPageDynamicHeaderTitle" },
       properties: { text: /Raven/ }
     })
   ).toBeUI5Visible();
   ```
 
-- The API reference shows the functions of the UI5 version on ui5.sap.com. Your app may run an older version. Select it in the version switcher of the API reference if a function is missing.
-
 ## Combining with the control API
 
 ```ts
 await When.onTheMainPage.onFilterBar().iChangeSearchField("Raven").and.iExecuteSearch();
-await Then.onTheMainPage.onTable().iCheckRows({}, 1);
-expect(await ui5.controls({ controlType: "sap.m.ColumnListItem" })).toHaveLength(1);
-await ui5.press({ controlType: "sap.m.Button", properties: { text: "Go" } });
+await expect(ui5.controls({ controlType: "sap.m.ColumnListItem" })).toHaveUI5Count(1); // control API
+await ui5.press({ controlType: "sap.m.Button", properties: { text: "Export" } }); // a custom action
 ```
 
 ## Fiori elements V2 and freestyle apps
@@ -151,23 +134,12 @@ There are no page objects for these apps. Use the [control API](./usage) and the
 
 Nothing special is needed: `Shell` statements run in the launchpad (top-level) frame, all other pages in the app iframe. The page objects are created in whichever frame the statement runs in.
 
-The `Shell` actions `iNavigateHome()` and `iNavigateBack()` don't work with the Work Zone shell bar. Navigate with `ui5.goTo("#Shell-home")` or `ui5.goTo("#Intent-action")` instead. See [Known limitations](./limitations).
+The `Shell` actions `iNavigateHome()` and `iNavigateBack()` don't work with the Work Zone shell bar: they look for elements of the classic launchpad header. Navigate with `ui5.goTo("#Shell-home")` or `ui5.goTo("#Intent-action")` instead. See [Known limitations](./limitations).
 
 ## How it works
 
-The library injects a small bridge into the app frame. The bridge creates the `sap.fe.test` page objects with `Opa5.createPageObjects`, queues your statement and runs `Opa.emptyQueue()`. This is the same approach as wdi5's integration.
+The library injects a small bridge into the app frame. The bridge creates the `sap.fe.test` page objects with `Opa5.createPageObjects`, queues your statement and runs `Opa.emptyQueue()`.
 
 ## Troubleshooting
 
-- **`unknown page 'x'`**: the page name isn't in the object passed to `fe.init`.
-- **A table or field isn't found:** check `componentId` and `contextPath` / `entitySet` against the manifest. A List Report with several table views (different entity sets per tab) can't be addressed with one page config. Use the control API for the other tabs, see [Recipes](./recipes#list-report-with-several-table-views).
-- **`Found no control with ID 'fe::table::undefined::LineItem'`:** the statement passes an empty object, `onTable({})` (in TypeScript a type error, but possible in JavaScript or behind a cast). Call `onTable()` without an argument, see [Notes on the typings and arguments](#frequently-used).
-- **`DOM representation of control '...FilterBar...' has no element with user-provided ID suffix 'btnSearch'`:** `iExecuteSearch()` looks for the Go button, but the filter bar runs in live mode and has none. Change the search field and press Enter instead, see [Recipes](./recipes#search-in-a-filter-bar-without-a-go-button).
-- **`Control '...::LineItem' is not rendered`** on an object page, e.g. for `onTable("Reviews").iExecuteCreate()`: the tables of an object page section are created when the section is shown. Go to the section first:
-
-  ```ts
-  await When.onTheDetailPage.iGoToSection("Reviews");
-  await When.onTheDetailPage.onTable("Reviews").iExecuteCreate();
-  ```
-
-- **Timeouts:** increase `ui5Options.feTimeout` or pass `fe.init(pages, { timeout })`.
+Fields, forms or tables that aren't found, dialogs that stay open and other problems: see [Troubleshooting the test library](./fe-troubleshooting).

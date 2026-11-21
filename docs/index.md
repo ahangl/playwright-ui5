@@ -1,6 +1,7 @@
 ---
 layout: home
 title: Introduction
+description: "UI5-aware end-to-end testing for Playwright: find UI5 controls, call their methods, wait for UI5, and run the Fiori elements test library."
 
 hero:
   name: playwright-ui5
@@ -25,7 +26,7 @@ features:
     details: expect(ui5.control(sel)).toHaveUI5Text("Go") retries until the control matches, like Playwright's locator assertions.
     link: /usage#assertions
   - title: Fiori elements V4 test library
-    details: Run SAP's official sap.fe.test page objects (ListReport, ObjectPage, Shell) with typed Given/When/Then chains. See which functions are available.
+    details: Run SAP's official sap.fe.test page objects (ListReport, ObjectPage, Shell) with typed Given/When/Then chains.
     link: /api/fe#functions
   - title: SAP Build Work Zone
     details: The app iframe is detected automatically. Log in once with SAP IAS and reuse the session with Playwright's storageState.
@@ -54,7 +55,7 @@ test("filter books", async ({ ui5 }) => {
 
 ## Which parts work in my app?
 
-Everything except the `fe` fixture works in **any UI5 app**. Only the `fe` fixture needs a **Fiori elements V4** app.
+Calls that start with `ui5.` or `expect(` work in **any UI5 app**. `fe.init` and `Given` / `When` / `Then` statements need a **Fiori elements V4** app.
 
 | Feature                                                                       | Freestyle UI5 app |   Fiori elements V2   | Fiori elements V4 |
 | ----------------------------------------------------------------------------- | :---------------: | :-------------------: | :---------------: |
@@ -66,10 +67,12 @@ Everything except the `fe` fixture works in **any UI5 app**. Only the `fe` fixtu
 | [Login](./authentication): `login`, `ias()`                                   |         ✓         |           ✓           |         ✓         |
 | [Fiori elements test library](./fe-testlib): `fe`, `Given` / `When` / `Then`  |         –         | – (not supported yet) |         ✓         |
 
-Rule of thumb: calls that start with `ui5.` or `expect(` work in every UI5 app. `fe.init` and `Given` / `When` / `Then` statements need Fiori elements V4.
-
 In a Fiori elements V4 app with custom parts (custom sections, columns, actions or building blocks), use `fe` for the standard parts and the control API for the custom ones, in the same test.
+
+## Testing scope
+
+playwright-ui5 is for end-to-end tests: real user flows through the UI, against a mock server or a real system. Test business logic with unit tests (QUnit, or OPA integration tests in the app), not through the UI.
 
 ## For AI agents
 
-This documentation is also available as plain text: [`llms.txt`](./llms.txt){target="_self"} (index) and [`llms-full.txt`](./llms-full.txt){target="_self"} (all pages in one file). Every page is also available as Markdown by adding `.md` to its URL. The [API reference](./api/) lists every export with its signature.
+This documentation is also available as plain text: [`llms.txt`](./llms.txt){target="_self"} (index) and [`llms-full.txt`](./llms-full.txt){target="_self"} (all pages in one file). Every page is also available as Markdown by adding `.md` to its URL. The [API reference](./api/) lists `ui5`, `fe` and `expect` with their signatures.

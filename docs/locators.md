@@ -1,10 +1,10 @@
+---
+description: "Selector fields to find UI5 controls: controlType, properties, bindingPath, labelFor, ancestor, interaction and more."
+---
+
 # Locators
 
-::: info Works in every UI5 app
-Selectors find any UI5 control: in freestyle apps, in Fiori elements V2 and V4 apps, and in the launchpad shell (`ui5.shell`).
-:::
-
-Controls are found with the selector format of UI5's `sap/ui/test/RecordReplay`. It's the same format wdi5 and OPA's declarative matchers use, so wdi5 selectors work unchanged. In playwright-ui5 you pass the selector directly, without wdi5's `{ selector: ... }` wrapper.
+Controls are found with the selector format of UI5's `sap/ui/test/RecordReplay`. It's the same format wdi5 and OPA's declarative matchers use, so wdi5 selectors work as they are: pass the inner object, without wdi5's `{ selector: ... }` wrapper. Selectors work in every UI5 app and in the launchpad shell (`ui5.shell`).
 
 ## Selector fields
 

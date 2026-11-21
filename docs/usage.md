@@ -1,3 +1,7 @@
+---
+description: "The concepts of the ui5 fixture: finding controls, RemoteControl, actions, chains, assertions and navigation."
+---
+
 # Usage
 
 ::: info Works in every UI5 app
@@ -45,7 +49,7 @@ const dialog = await ui5.controlOrNull({ controlType: "sap.m.Dialog" }, { timeou
 - `ui5.controls()` returns all controls that match now. It doesn't wait for matches. Use [`toHaveUI5Count(n)`](./api/expect#tohaveui5count) to wait for a number of matches.
 - `ui5.locator()` gives a Playwright `Locator` for the control's DOM element.
 
-Every call first waits until UI5 is idle (no pending requests, timeouts, rendering or busy indicators).
+Every call first waits until UI5 is idle (no pending requests, timeouts, promises or rendering).
 
 `ui5.locator()` returns a `Promise<Locator>`, because it first finds the control. Await it: `const go = await ui5.locator(GO_BUTTON)`. Without `await`, Playwright reports confusing errors such as `go.click is not a function` or "expected a Locator".
 
@@ -53,51 +57,36 @@ All methods: [ui5 reference](./api/ui5#finding-controls).
 
 ## RemoteControl
 
-A `RemoteControl` represents a control in the browser. It is looked up by its id on every call, so it stays valid across re-rendering.
-
-Every public method of the control is available and returns a promise:
+A `RemoteControl` represents a control in the browser. It is looked up by its id on every call, so it stays valid across re-rendering. Every public method of the control is available and returns a promise:
 
 ```ts
-await input.getValue();
 await input.setValue("Poe");
 const items = await table.getItems(); // RemoteControl[]
-const context = await item.getBindingContext(); // handle to the browser object
+const context = await item.getBindingContext(); // a remote object
 await context.getProperty("title");
 ```
 
-- Controls come back as `RemoteControl`s.
-- Other objects (binding contexts, models, ...) come back as handles you can call methods on.
-- Plain values (strings, numbers, arrays, plain objects) come back as values.
-- You can pass a `RemoteControl` back as an argument, e.g. `await parent.indexOfAggregation("content", go)`.
-- Functions can't be arguments, see [Recipes](./recipes#mock-event-parameters).
-
-Pass the UI5 class as a type parameter for typed methods: `ui5.control<Input>({...})` with `import type Input from "sap/m/Input"` (needs `@sapui5/types`).
-
-Besides the control's own methods, a `RemoteControl` has helpers such as `id`, `className`, `methods`, `getProperty()`, `getBindingContextPath()` and `locator()`. All of them: [RemoteControl reference](./api/remote-control).
+Controls come back as `RemoteControl`s, other UI5 objects as remote objects, plain data as values. Pass the UI5 class as a type parameter for typed methods: `ui5.control<Input>({...})` with `import type Input from "sap/m/Input"` (needs `@sapui5/types`). Return values, arguments, properties and helpers: [RemoteControl reference](./api/ui5#remotecontrol).
 
 ### press and enterText
 
 ```ts
 await go.press();
 await input.enterText("Edgar Allan Poe");
-await input.enterText("more", { clearTextFirst: false });
 await go.press({ native: true }); // real Playwright click on the DOM element
 ```
 
-- Both use OPA's actions (RecordReplay) and wait until the control is visible, enabled, not busy and not covered by a popup.
-- `native: true` uses a Playwright click instead.
-- Both start right away and return a chain on the same control: `await go.press().getText()`.
+Both use OPA's actions and wait until the control is visible, enabled, not busy and not covered by a popup. Details: [`press()`](./api/ui5#press), [`enterText()`](./api/ui5#entertext).
 
 ### exec
 
-Runs a function in the app frame. The control is the first parameter, followed by your arguments. Returned controls become `RemoteControl`s.
+`exec` runs a function in the browser. It is serialized, so it can't use variables of the test: pass them as arguments.
 
 ```ts
 const text = await go.exec((control: Button, suffix: string) => control.getText() + suffix, "!");
-const hash = await ui5.exec((prefix: string) => prefix + window.location.hash, "at ");
 ```
 
-The function is serialized and runs in the browser. It can't use variables of the test, so pass them as arguments.
+Details: [`control.exec()`](./api/ui5#exec), [`ui5.exec()`](./api/ui5#ui5-exec).
 
 ### Fluent API
 
@@ -105,37 +94,22 @@ Method calls can be chained with a single `await`, like wdi5's fluent API. The w
 
 ```ts
 const path = await ui5.control<Table>({ controlType: "sap.m.Table" }).getItems(0).getBindingContextPath();
-const title = await ui5.control<Table>(TABLE).getItems(0).getBindingContext()!.getProperty("title");
 await ui5.control(GO_BUTTON).press().getText();
 ```
 
-- Aggregation getters take an index, as in wdi5: `getItems(0)` returns the first item.
-- If a step fails, the error shows the whole chain, the failing step and what the steps before it returned.
-- After an action the chain continues on the same control. If the action fails, the chain rejects and later steps don't run.
-- **Chains are lazy.** They only run when awaited, and the result is cached for that chain object. A forgotten `await` does nothing, so enable [`@typescript-eslint/no-floating-promises`](https://typescript-eslint.io/rules/no-floating-promises/). `press()` and `enterText()` always run.
-- `const table = await ui5.control(...)` still returns the `RemoteControl`, so tests can await each step as well.
+**Chains are lazy:** they only run when awaited. A forgotten `await` does nothing, so enable [`no-floating-promises`](./installation#typescript). Details: [Chains](./api/ui5#chains).
 
 ## Assertions
 
-`expect` from this package is Playwright's `expect` with extra matchers for UI5 controls. They work like Playwright's locator assertions:
-
-- Each matcher looks up the control again and retries until the check passes or the `expect` timeout runs out.
-- They also catch changes that happen after UI5 reports idle.
-- They support `.not` and `{ timeout }`.
-- The failure message shows the control, the expected value and the last value read.
+`expect` from this package adds UI5 matchers to Playwright's `expect`. Like Playwright's locator assertions, they retry until the check passes. Pass the chain itself, without `await`:
 
 ```ts
 await expect(ui5.control(GO_BUTTON)).toBeUI5Enabled();
 await expect(ui5.control(TABLE).getItems(0)).toHaveUI5BindingPath("/Books(201)");
 await expect(ui5.controls({ controlType: "sap.m.ColumnListItem" })).toHaveUI5Count(2);
-await expect(ui5.control(GO_BUTTON)).not.toHaveUI5Text("Stop", { timeout: 2_000 });
 ```
 
-Pass the chain itself (without `await`) to get the retrying behaviour. `expect(await control.getText()).toBe("Go")` checks once.
-
-Playwright's own matchers work on locators: `await expect(await ui5.locator(GO_BUTTON)).toBeVisible()`.
-
-All matchers: [Assertions reference](./api/expect).
+`expect(await control.getText()).toBe("Go")` checks only once. All matchers: [Assertions reference](./api/expect).
 
 ## Navigation
 
@@ -147,41 +121,19 @@ await ui5.goTo("#Books-display");
 await ui5.goTo({ route: "BooksObjectPage", params: { key: "251" } });
 ```
 
-Navigating with the router doesn't reload the page. Without `componentId`, the router of the only application component is used. Details: [`ui5.goTo()`](./api/ui5#ui5-goto).
-
-`ui5.waitForUI5()` waits until UI5 is idle. It is rarely needed, because every call waits already. Use it before plain Playwright code that reads the page.
+Navigating with the router doesn't reload the page. Details: [`ui5.goTo()`](./api/ui5#ui5-goto).
 
 ## Launchpad and Work Zone shell
 
-`ui5` works in the app frame. `ui5.shell` is the same control API for the top-level frame, i.e. the launchpad / Work Zone shell (header, user menu):
+`ui5` works in the app frame. `ui5.shell` is the same control API for the top-level frame, i.e. the launchpad or Work Zone shell (header, user menu):
 
 ```ts
 await ui5.shell.control({ id: "userActionsMenuHeaderButton" }).press();
 await ui5.control({ controlType: "sap.m.Button", properties: { text: "Go" } }).press(); // app frame again
 ```
 
-There is no switching between frames. `ui5.appFrame()` and `ui5.shellFrame()` return the Playwright `Frame`s.
-
-## Screenshots
-
-Use Playwright's screenshots:
-
-```ts
-await page.screenshot({ path: "books.png" });
-await (await ui5.locator(TABLE)).screenshot({ path: "table.png" });
-```
-
-or `use: { screenshot: "only-on-failure" }` in the config.
+There is no switching between frames.
 
 ## Without fixtures
 
-The `UI5` class works with any `Page`, e.g. in a global setup:
-
-```ts
-import { UI5 } from "@ahangl/playwright-ui5";
-
-const ui5 = new UI5(page, { appFrame: "#application-frame" }, "http://localhost:8080");
-await ui5.control(GO_BUTTON).press();
-```
-
-Outside of a running test, calls don't create report steps. Ignoring `fetch` requests with `ignoreAutoWaitUrls` needs the fixture.
+The `UI5` class works with any `Page`, e.g. in a global setup: `new UI5(page, options)`. See [Without fixtures](./api/ui5#without-fixtures).

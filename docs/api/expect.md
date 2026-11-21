@@ -1,3 +1,7 @@
+---
+description: "Reference of the retrying UI5 matchers of expect: toHaveUI5Property, toHaveUI5Text, toHaveUI5Count and more."
+---
+
 # Assertions (expect)
 
 `expect` from this package is Playwright's `expect` with extra matchers for UI5 controls. They work like Playwright's locator assertions:

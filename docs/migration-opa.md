@@ -1,10 +1,14 @@
+---
+description: "Move OPA5 tests to playwright-ui5: waitFor, actions, matchers, journeys and the Fiori elements test library."
+---
+
 # Migration from OPA
 
 OPA5 tests run inside the browser, next to the app, in QUnit. playwright-ui5 tests run in Node.js with Playwright and talk to the app in a real browser. The concepts carry over:
 
 - `waitFor` with matchers becomes a selector (`ui5.control(selector)`). It uses the same matchers underneath (UI5's RecordReplay).
 - OPA actions become `press()` and `enterText()`. They are the same OPA actions.
-- `autoWait` is always on: every call waits until UI5 is idle. A Fiori elements `When` statement also waits after its last action.
+- `autoWait` is always on: every call waits until UI5 is idle. A Fiori elements `Given` / `When` statement also waits after its last action ([`feWaitAfter`](./configuration#fewaitafter)).
 - The Fiori elements test library (`sap.fe.test`) is the same. Your page definitions and statements stay almost unchanged.
 
 What changes:
@@ -22,7 +26,7 @@ What changes:
 | `Given.iStartMyAppInAFrame(url)` / `iStartMyUIComponent(...)` | `await ui5.goTo(url)`                                                                             |
 | `Then.iTeardownMyApp()` / `iTeardownMyUIComponent()`          | not needed: every test gets a fresh page                                                          |
 | `Opa5.extendConfig({ autoWait: true })`                       | always on                                                                                         |
-| `Opa5.extendConfig({ timeout: 15 })` (seconds)                | `ui5Options.waitForUI5Timeout: 15_000` (milliseconds)                                             |
+| `Opa5.extendConfig({ timeout: 15 })` (seconds)                | `ui5Options.waitForUI5Timeout: 15_000` (milliseconds), `feTimeout` for `fe` statements            |
 | `Opa5.extendConfig({ viewNamespace })` + `viewName: "Main"`   | full name in the selector: `viewName: "my.app.view.Main"`                                         |
 | `this.waitFor({ ..., success })`                              | `const control = await ui5.control(selector)`                                                     |
 | `this.waitFor({ ..., actions: new Press() })`                 | `await ui5.control(selector).press()`                                                             |
@@ -107,8 +111,7 @@ OPA page objects become a class (or plain functions) that use `ui5`. Register it
 
 ```ts
 // tests/pages/MainPage.ts
-import type { UI5 } from "@ahangl/playwright-ui5";
-import { expect } from "@ahangl/playwright-ui5";
+import { expect, type UI5 } from "@ahangl/playwright-ui5";
 
 const GO = { controlType: "sap.m.Button", properties: { text: "Go" } };
 const AUTHOR = { viewName: "my.books.view.Main", id: "authorInput" };
@@ -155,7 +158,7 @@ test("filters books by author", async ({ ui5, onTheMainPage }) => {
 
 An OPA journey is a sequence of `opaTest`s that share one app instance: the first test starts the app, the last one tears it down. In Playwright every test gets a fresh page. Either:
 
-- make each test independent (open the app in `test.beforeEach`). This is the recommended way and runs tests in parallel; or
+- make each test independent (open the app in `test.beforeEach`). This is the recommended way; with `fullyParallel: true` the tests also run in parallel; or
 - put the journey into one test and structure it with `test.step`:
 
 ```ts
@@ -241,7 +244,7 @@ OPA usually starts the app from a test page in the app (`test/flpSandbox.html`, 
   ```
 
 - For mock data, add [`@sap-ux/ui5-middleware-fe-mockserver`](https://www.npmjs.com/package/@sap-ux/ui5-middleware-fe-mockserver) to the `ui5.yaml` that `ui5 serve` uses. Or open the HTML page that already starts your mock server, e.g. `await ui5.goTo("/test/flpSandbox.html#Books-display")`.
-- A launchpad sandbox page works too: the app iframe or the embedded app is detected automatically.
+- An FLP sandbox page works too: the app iframe or the embedded app is detected automatically.
 
 ## Keep or move?
 

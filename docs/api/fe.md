@@ -1,4 +1,8 @@
-# fe (Fiori elements V4)
+---
+description: "Reference of the fe fixture: fe.init, page configuration, statements and the sap.fe.test functions per area."
+---
+
+# fe
 
 The `fe` fixture runs SAP's test library for Fiori elements V4 apps, [`sap.fe.test`](https://ui5.sap.com/#/api/sap.fe.test). This library adds only `fe.init()`. The functions of the statements (`iPressRow`, `iCheckRows`, ...) are SAP's and documented in the UI5 API reference; the [tables below](#functions) link to the right page.
 
@@ -9,12 +13,12 @@ const { When, Then } = fe.init({
 await When.onTheMainPage.onTable().iPressRow({ "Book ID": "251" });
 ```
 
-[Learn more: Fiori elements V4 test library](../fe-testlib)
+[Learn more: Test library (sap.fe.test)](../fe-testlib)
 
 ## fe.init()
 
 ```ts
-fe.init<P extends FioriElementsPages>(
+fe.init<const P extends FioriElementsPages>(
   pages: P,
   options?: { timeout?: number; waitAfter?: boolean }
 ): { Given; When; Then }
@@ -22,10 +26,10 @@ fe.init<P extends FioriElementsPages>(
 
 Declares the page objects and returns the roots `Given`, `When` and `Then`. Each has one property per page. Nothing runs in the browser until a statement is awaited, so `fe.init()` can be called before the app is open.
 
-| Option      | Default                                             | Description                                                                 |
-| ----------- | --------------------------------------------------- | --------------------------------------------------------------------------- |
-| `timeout`   | [`feTimeout`](./configuration#fetimeout) (30000)    | Max. ms per statement.                                                      |
-| `waitAfter` | [`feWaitAfter`](./configuration#fewaitafter) (true) | `Given` / `When` statements wait until UI5 is idle after their last action. |
+| Option      | Default                                              | Description                                                                 |
+| ----------- | ---------------------------------------------------- | --------------------------------------------------------------------------- |
+| `timeout`   | [`feTimeout`](../configuration#fetimeout) (30000)    | Max. ms per statement, rounded up to whole seconds.                         |
+| `waitAfter` | [`feWaitAfter`](../configuration#fewaitafter) (true) | `Given` / `When` statements wait until UI5 is idle after their last action. |
 
 ## Page configuration
 
@@ -59,13 +63,7 @@ await When.onTheMainPage.onTable().iPressRow({ "Book ID": "251" });
 - **Area:** `onTable()`, `onFilterBar()`, `onHeader()`, ... Some functions are on the page itself, e.g. `iGoToSection()`.
 - **Function:** from the [tables below](#functions).
 
-Behaviour:
-
-- A statement only runs when awaited. Await every statement.
-- `.and` continues a statement: `onFilterBar().iChangeFilterField("Author", "Poe").and.iExecuteSearch()`.
-- `Given` / `When` statements wait until UI5 is idle after their last action (see `waitAfter`). `Then` statements wait before each check, like OPA.
-- A failing statement throws an error with OPA's diagnostics and the last checks that passed. It points at your test line.
-- Typed from `@sapui5/types` if it is installed. Without it, any function name compiles, and the statements work the same.
+A statement only runs when awaited; `.and` continues it. How statements wait, fail and are typed: [Calling test functions](../fe-testlib#calling-test-functions).
 
 ### onTable()
 
@@ -73,7 +71,15 @@ Behaviour:
 onTable(table?: string | { property: string; qualifier?: string })
 ```
 
-Without an argument, the page's only table. Otherwise its header title, or the navigation property and qualifier. An empty object is a type error: it would build the table id `fe::table::undefined::LineItem`.
+Which table an argument selects depends on the page (UI5 1.136 to 1.154):
+
+| Argument                   | List report                                                 | Object page                                             |
+| -------------------------- | ----------------------------------------------------------- | ------------------------------------------------------- |
+| none                       | the page's only table                                       | not supported: the statement throws a `TypeError`       |
+| a string                   | the id part: `"Books"` selects `fe::table::Books::LineItem` | the header title: `"Reviews"`                           |
+| `{ property, qualifier? }` | `property` only, `qualifier` is ignored                     | `fe::table::<property>::LineItem`, plus `::<qualifier>` |
+
+An empty object is a type error, also without `@sapui5/types`: it would build the table id `fe::table::undefined::LineItem`. `onTable()` compiles with every version of `@sapui5/types`, also before 1.150, where SAP declares the identifier as required.
 
 ```ts
 await Then.onTheMainPage.onTable().iCheckRows({}, 2);

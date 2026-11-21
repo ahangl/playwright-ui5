@@ -1,3 +1,7 @@
+---
+description: "Move wdi5 tests to playwright-ui5: API mapping, exec, the fluent API and the Fiori elements test library."
+---
+
 # Migration from wdi5
 
 playwright-ui5 follows wdi5's concepts: the same selectors, a control API with UI5's own methods, a fluent API, and the Fiori elements test library. The main differences come from the test runner:
@@ -10,7 +14,7 @@ playwright-ui5 follows wdi5's concepts: the same selectors, a control API with U
 
 | wdi5                                                                                             | playwright-ui5                                                              |
 | ------------------------------------------------------------------------------------------------ | --------------------------------------------------------------------------- |
-| `await browser.asControl({ selector })`                                                          | `await ui5.control(selector)` (the selector is passed directly)             |
+| `await browser.asControl({ selector })`                                                          | `await ui5.control(selector)` (no `selector:` wrapper)                      |
 | `await browser.asControl({ selector }).getItems(0).getTitle()` (fluent API)                      | `await ui5.control(selector).getItems(0).getTitle()`                        |
 | `await browser.allControls({ selector })`                                                        | `await ui5.controls(selector)`                                              |
 | `control.press()` / `enterText()`                                                                | same (also chainable: `press().getText()`)                                  |
@@ -30,7 +34,7 @@ playwright-ui5 follows wdi5's concepts: the same selectors, a control API with U
 | `browser.screenshot()`                                                                           | Playwright `page.screenshot()` / `screenshot: "only-on-failure"`            |
 | `wdi5.getLogger()`                                                                               | `console.log`, Playwright's report steps and trace                          |
 | `browser.fe.initialize(pages)` + `execute((Given, When, Then) => ...)`                           | `const { Given, When, Then } = fe.init(pages)`, then `await When...`        |
-| `capabilities["wdi5:authentication"]`                                                            | `login(page, { provider: ias() })` in a setup project + `storageState`      |
+| `capabilities["wdi5:authentication"]`                                                            | `login(page, { url })` in a setup project + `storageState`                  |
 | `wdi5_username` / `wdi5_password`                                                                | `UI5_USERNAME` / `UI5_PASSWORD` (`credentialsFromEnv(prefix)`)              |
 
 ## Porting tests
@@ -44,7 +48,7 @@ In wdi5 the control is `this`, and the arguments start at the first parameter. H
 await button.exec(function (suffix) {
   return this.getText() + suffix;
 }, "!");
-// playwright-ui5
+// playwright-ui5 (import type Button from "sap/m/Button")
 await button.exec((control: Button, suffix: string) => control.getText() + suffix, "!");
 ```
 
@@ -75,7 +79,7 @@ await FioriElementsFacade.execute((Given, When, Then) => {
 // playwright-ui5
 const { When, Then } = fe.init({ onTheMainPage: { ListReport: { appId, componentId, entitySet } } });
 await When.onTheMainPage.onFilterBar().iExecuteSearch();
-await Then.onTheMainPage.onTable().iCheckRows({}, 5);
+await Then.onTheMainPage.onTable().iCheckRows({}, 5); // SAP's typings need the {}
 ```
 
 Await each statement. A failing statement points at its own line. See [Fiori elements test library](./fe-testlib).

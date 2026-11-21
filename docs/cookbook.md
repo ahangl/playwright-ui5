@@ -1,12 +1,12 @@
-# Recipes
+---
+description: "Short solutions for common tasks: Work Zone navigation, keyboard input, downloads, several users and more."
+---
 
-## Testing scope
-
-playwright-ui5 is for end-to-end tests: real user flows through the UI, against a mock server or a real system. Test business logic with unit tests (QUnit, or OPA integration tests in the app), not through the UI.
+# Cookbook
 
 ## Ignore requests that never finish
 
-Long polling, push channels or notification polling keep UI5 "busy" forever. Without help, every call waits for them until `waitForUI5Timeout` runs out:
+Long polling, push channels or notification polling never finish, so every call waits for them until `waitForUI5Timeout` runs out. Ignore them:
 
 ```ts
 // playwright.config.ts, or test.use(...) in a test file
@@ -15,7 +15,7 @@ export default defineConfig<UI5TestOptions>({
 });
 ```
 
-Strings are regular expression sources. See [Configuration](./api/configuration#ignoreautowaiturls).
+Details: [`ignoreAutoWaitUrls`](./configuration#ignoreautowaiturls).
 
 ## Navigate in SAP Build Work Zone
 
@@ -26,11 +26,7 @@ await ui5.control({ controlType: "sap.m.Button", properties: { text: "Go" } }).p
 await ui5.goTo("#Shell-home"); // back to the home page
 ```
 
-The app frame is detected again after each navigation. Use `ui5.shell` for the shell bar:
-
-```ts
-await ui5.shell.control({ id: "userActionsMenuHeaderButton" }).press();
-```
+The app frame is detected again after each navigation. For the shell bar, use [`ui5.shell`](./usage#launchpad-and-work-zone-shell).
 
 ## Send keyboard events
 
@@ -62,20 +58,14 @@ await list.exec((l, key) => l.fireItemPress({ listItem: { data: () => key } }), 
 ## Read values of a table row
 
 ```ts
+import type Table from "sap/m/Table";
+
 const TABLE = { controlType: "sap.m.Table" };
 const path = await ui5.control<Table>(TABLE).getItems(0).getBindingContextPath();
 const title = await ui5.control<Table>(TABLE).getItems(0).getBindingContext()!.getProperty("title");
 
 // one specific row
 const row = await ui5.control({ controlType: "sap.m.ColumnListItem", bindingPath: { path: "/Books(251)" } });
-```
-
-## Wait for a number of results
-
-`ui5.controls()` doesn't wait for matches. Use the retrying matcher:
-
-```ts
-await expect(ui5.controls({ controlType: "sap.m.ColumnListItem" })).toHaveUI5Count(2);
 ```
 
 ## Assert a file download
@@ -96,42 +86,22 @@ import { expect as myExpect } from "./my-matchers";
 export const expect = mergeExpects(ui5Expect, myExpect);
 ```
 
-## Catch forgotten awaits
+## Ask a yes/no question without a long wait
 
-Chains and Fiori elements statements only run when awaited. Enable the ESLint rule [`@typescript-eslint/no-floating-promises`](https://typescript-eslint.io/rules/no-floating-promises/):
-
-```js
-// eslint.config.mjs (typescript-eslint, type-aware)
-export default defineConfig(tseslint.configs.recommended, {
-  languageOptions: { parserOptions: { projectService: true } },
-  rules: { "@typescript-eslint/no-floating-promises": "error" }
-});
-```
-
-## Code completion
-
-Install `@sapui5/types` and pass the UI5 class as a type parameter:
+`fe.init(pages, { timeout })` sets the timeout of the roots it returns. A second set of roots with a short timeout answers a question quickly:
 
 ```ts
-import type Input from "sap/m/Input";
-
-const input = await ui5.control<Input>({ controlType: "sap.m.Input" });
-await input.getValue(); // typed
+const probe = fe.init(pages, { timeout: 2_000 });
+const noBooks = await probe.Then.onTheMainPage
+  .onTable()
+  .iCheckRows({}, 0)
+  .then(
+    () => true,
+    () => false
+  );
 ```
 
-## Search in a filter bar without a Go button
-
-`.and.iExecuteSearch()` presses the Go button. A filter bar in live mode has none, and the statement fails with `DOM representation of control '...FilterBar...' has no element with user-provided ID suffix 'btnSearch'`. Change the search field with the test library, then press Enter in the field:
-
-```ts
-await When.onTheMainPage.onFilterBar().iChangeSearchField("Raven");
-const search = await ui5.locator({ controlType: "sap.m.SearchField", interaction: "focus" });
-await search.press("Enter");
-await ui5.waitForUI5();
-await Then.onTheMainPage.onTable().iCheckRows({}, 1);
-```
-
-This is the same as OPA's `EnterText` with `pressEnterKey: true`, see [Migration from OPA](./migration-opa#actions).
+A statement that returns `false` here still shows as a failed step in the report and the trace.
 
 ## List report with several table views
 

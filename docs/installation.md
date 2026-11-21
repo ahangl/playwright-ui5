@@ -1,3 +1,7 @@
+---
+description: "Install playwright-ui5, configure Playwright and write a first test for a UI5 app."
+---
+
 # Installation
 
 ## Requirements
@@ -10,7 +14,6 @@
 
 ```bash
 npm i -D @ahangl/playwright-ui5 @playwright/test
-npx playwright install chromium
 ```
 
 Optional: SAP's UI5 typings give you typed control methods and typed Fiori elements chains. Without them everything works the same, but untyped.
@@ -19,11 +22,11 @@ Optional: SAP's UI5 typings give you typed control methods and typed Fiori eleme
 npm i -D @sapui5/types
 ```
 
-Any version of `@sapui5/types` works. It doesn't have to match the UI5 version your app runs; newer typings describe the APIs more accurately.
+Any version of `@sapui5/types` from 1.120 works. It doesn't have to match the UI5 version your app runs; newer typings describe the APIs more accurately.
 
 ## Configure Playwright
 
-Point `baseURL` at your app. Add `ui5Options` only where you need to change the defaults (see [Configuration](./api/configuration)).
+Point `baseURL` at your app. Add `ui5Options` only where you need to change the defaults (see [Configuration](./configuration)).
 
 ```ts
 // playwright.config.ts
@@ -56,7 +59,7 @@ import type Table from "sap/m/Table";
 test("search books", async ({ ui5 }) => {
   await ui5.goTo("/index.html");
 
-  // Control API, the counterpart of wdi5's browser.asControl()
+  // control API: find controls, enter text, press
   await ui5.enterText({ controlType: "sap.m.Input", labelFor: { text: "Author" } }, "Edgar Allan Poe");
   await ui5.press({ controlType: "sap.m.Button", properties: { text: "Go" } });
 
@@ -105,4 +108,15 @@ The Fiori elements functions (`iChangeFilterField`, `iCheckRows`, ...) come from
 
 - Pass the UI5 class as a type parameter for typed methods: `ui5.control<Input>({...})` with `import type Input from "sap/m/Input"` (needs `@sapui5/types`).
 - The published types compile without `@sapui5/types` too, also with `skipLibCheck: false`.
-- Enable the ESLint rule [`@typescript-eslint/no-floating-promises`](https://typescript-eslint.io/rules/no-floating-promises/). Chains only run when awaited, so a forgotten `await` silently does nothing.
+- Enable the ESLint rule [`@typescript-eslint/no-floating-promises`](https://typescript-eslint.io/rules/no-floating-promises/). Chains and Fiori elements statements only run when awaited, so a forgotten `await` silently does nothing:
+
+  ```js
+  // eslint.config.mjs (typescript-eslint, type-aware)
+  import { defineConfig } from "eslint/config";
+  import tseslint from "typescript-eslint";
+
+  export default defineConfig(tseslint.configs.recommended, {
+    languageOptions: { parserOptions: { projectService: true } },
+    rules: { "@typescript-eslint/no-floating-promises": "error" }
+  });
+  ```

@@ -1,8 +1,12 @@
+---
+description: "Log in to SAP Build Work Zone with SAP IAS once in a setup project and reuse the session in all tests."
+---
+
 # Authentication
 
 Log in once in a Playwright setup project, save the session with `storageState`, and reuse it in all tests. This is faster than logging in per test and works with parallel workers.
 
-## Configuration
+## Setup project
 
 ```ts
 // tests/auth.setup.ts
@@ -40,38 +44,39 @@ Add `.auth/` to `.gitignore`.
 
 ### Absolute URL
 
-`login({ url })` needs an absolute URL. A relative path fails right away with `playwright-ui5: login() needs an absolute url, got "site/launchpad"; build it with new URL(path, baseURL).href`. To build it from the project's `baseURL`, give the setup project a `baseURL` and use the `baseURL` fixture:
+`login()` needs an absolute URL. To build it from a path, give the setup project a `baseURL` (`use: { baseURL: process.env.WORKZONE_URL }`) and use the `baseURL` fixture:
 
 ```ts
-// playwright.config.ts
-export default defineConfig<UI5TestOptions>({
-  projects: [
-    { name: "setup", testMatch: /.*\.setup\.ts/, use: { baseURL: process.env.WORKZONE_URL } }
-    // ... the test projects as above
-  ]
-});
-```
-
-```ts
-// tests/auth.setup.ts
-import { test as setup } from "@playwright/test";
-import { login } from "@ahangl/playwright-ui5";
-
 setup("log in", async ({ page, baseURL }) => {
-  await login(page, {
-    url: new URL("site/launchpad", baseURL).href, // e.g. https://example.launchpad.cfapps.eu10.hana.ondemand.com/site/launchpad
-    storageStatePath: ".auth/user.json"
-  });
+  await login(page, { url: new URL("site/launchpad", baseURL).href, storageStatePath: ".auth/user.json" });
 });
 ```
 
 `new URL(path, baseURL)` resolves like a link: end `baseURL` with `/` if it has a path, otherwise its last segment is replaced.
 
-### login options
+## login()
 
-`login()` takes `url`, `provider` (default `ias()`), `credentials` (default `credentialsFromEnv()`), `timeout` (default 60 s) and `storageStatePath`. Details: [`login()` reference](./api/auth#login).
+```ts
+login(page: Page, options: LoginOptions): Promise<void>
+```
 
-### SAP Cloud Identity Services (IAS)
+Opens `url`, logs in with the provider and, with `storageStatePath`, saves cookies and local storage for Playwright's `storageState`.
+
+| Option             | Default                                | Description                                                                             |
+| ------------------ | -------------------------------------- | --------------------------------------------------------------------------------------- |
+| `url`              | (required)                             | Absolute URL of the Work Zone site or app. Build it with `new URL(path, baseURL).href`. |
+| `provider`         | `ias()`                                | The [`AuthProvider`](#custom-idp) that performs the login.                              |
+| `credentials`      | [`credentialsFromEnv()`](#credentials) | `{ username, password }`.                                                               |
+| `timeout`          | `60000`                                | Max. ms for the whole login.                                                            |
+| `storageStatePath` |                                        | Where to save the session, e.g. `".auth/user.json"`. Omit to only log in.               |
+
+A relative `url` fails right away with `playwright-ui5: login() needs an absolute url, got "..."`.
+
+## SAP Cloud Identity Services (IAS)
+
+```ts
+ias(options?: IasOptions): AuthProvider
+```
 
 `ias(options)` handles:
 
@@ -79,13 +84,42 @@ setup("log in", async ({ page, baseURL }) => {
 - The optional XSUAA IdP selection page (`idpDomain`).
 - Skipping the passwordless/biometric setup prompt.
 - Failing fast with the IdP's error message when credentials are wrong.
-- An existing valid session: then it does nothing.
+- An existing valid session: it opens the URL and skips the form.
 
-Its options (`idpDomain`, the selectors, `skipPasswordlessSetup`, `isLoggedIn`) are listed in the [`ias()` reference](./api/auth#ias).
+| Option                  | Default                  | Description                                                                       |
+| ----------------------- | ------------------------ | --------------------------------------------------------------------------------- |
+| `idpDomain`             |                          | IdP to pick on the XSUAA selection page, e.g. `"mytenant.accounts.ondemand.com"`. |
+| `usernameSelector`      | `#j_username`            | Username field.                                                                   |
+| `passwordSelector`      | `#j_password`            | Password field.                                                                   |
+| `submitSelector`        | `#logOnFormSubmit`       | Submit button.                                                                    |
+| `errorSelector`         | IAS error elements       | Elements whose text is reported when the login fails.                             |
+| `skipPasswordlessSetup` | `true`                   | Skip the "set up passwordless / biometric authentication" prompt.                 |
+| `isLoggedIn`            | back on the app's origin | `(page, ctx) => boolean \| Promise<boolean>`: decides when the login is complete. |
 
-### Custom IdP
+```ts
+await login(page, { url, provider: ias({ idpDomain: "mytenant.accounts.ondemand.com" }) });
+```
 
-Implement the [`AuthProvider`](./api/auth#authprovider) interface:
+MFA is not supported. Use a technical test user without MFA.
+
+## Custom IdP
+
+Implement the `AuthProvider` interface and pass it as `provider`:
+
+```ts
+interface AuthProvider {
+  readonly name: string;
+  login(page: Page, ctx: LoginContext): Promise<void>;
+}
+
+interface LoginContext {
+  url: string; // the absolute url passed to login()
+  credentials: Credentials; // { username: string; password: string }
+  timeout: number; // max. ms for the whole login
+}
+```
+
+Its `login()` opens `ctx.url`, logs in, and resolves once the browser is back on the app. `name` is a label for your own use. Example:
 
 ```ts
 import type { AuthProvider } from "@ahangl/playwright-ui5";
@@ -102,7 +136,7 @@ export const myIdp: AuthProvider = {
 };
 ```
 
-### Basic Authentication
+## Basic Authentication
 
 Use Playwright's built-in `httpCredentials`:
 
@@ -114,8 +148,10 @@ export default defineConfig({
 
 ## Credentials
 
-`credentialsFromEnv(prefix = "UI5")` reads `<prefix>_USERNAME` and `<prefix>_PASSWORD` and fails with a clear message if one is missing. Keep them in a git-ignored `.env` file and load it in `playwright.config.ts` with `import "dotenv/config"`. Never commit credentials.
+```ts
+credentialsFromEnv(prefix?: string): Credentials
+```
+
+`credentialsFromEnv()` reads `<prefix>_USERNAME` (default prefix `UI5`) and `<prefix>_PASSWORD` and fails with a clear message if one is missing. Keep them in a git-ignored `.env` file and load it in `playwright.config.ts` with `import "dotenv/config"`. Never commit credentials.
 
 Use a different prefix for a second user: `login(page, { url, credentials: credentialsFromEnv("ADMIN"), storageStatePath: ".auth/admin.json" })`.
-
-MFA is not supported. Use a technical test user without MFA.

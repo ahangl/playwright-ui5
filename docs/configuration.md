@@ -1,3 +1,7 @@
+---
+description: "The ui5Options (timeouts, app frame, ignored requests) and useful Playwright settings for UI5 apps."
+---
+
 # Configuration
 
 ## `ui5Options`
@@ -39,7 +43,7 @@ test.use({ ui5Options: { appFrame: "#application-frame" } });
 
 ### waitForUI5Timeout
 
-Every call (control lookup, method call, action, `goTo`) first waits until UI5 is idle: no pending requests, timeouts, rendering or busy indicators. This option limits that wait and the wait for a control to appear. Most calls also take `{ timeout }` to override it once:
+Every control lookup, method call and action first waits until UI5 is idle: no pending requests, timeouts, promises or rendering. `goTo` waits after navigating. This option limits that wait and the wait for a control to appear. Most calls also take `{ timeout }` to override it once:
 
 ```ts
 await ui5.control(selector, { timeout: 30_000 }).press();
@@ -60,11 +64,11 @@ OPA waits until UI5 is idle before each action, but not after the last one. So a
 ### appFrame
 
 - `"auto"` (default) uses the first of these that applies:
-  1. A visible launchpad application iframe (Work Zone / FLP). It is used even while UI5 is still loading inside it; the helper then waits for UI5 there.
+  1. A visible launchpad application iframe (Work Zone or FLP sandbox). It is used even while UI5 is still loading inside it; playwright-ui5 then waits for UI5 there.
   2. Any other visible iframe that already runs UI5.
   3. The main frame, for a standalone app.
 
-  If the main frame is a launchpad, the helper asks it where the current app runs (`sap.ushell` AppLifeCycle). The launchpad home page or an app embedded in the launchpad window uses the main frame. Otherwise the helper keeps waiting for the app iframe.
+  If the main frame is a launchpad, playwright-ui5 asks it where the current app runs (`sap.ushell` AppLifeCycle). The launchpad home page or an app embedded in the launchpad window uses the main frame. Otherwise it keeps waiting for the app iframe.
 
 - `"main"`: always the top-level frame.
 - Any other string: a CSS selector of the `<iframe>` that hosts the app, e.g. `"#application-frame"`.
@@ -79,6 +83,14 @@ Only needed for custom hosts. The default is:
 iframe[data-sap-ushell-active="true"], iframe.sapUShellApplicationContainer, iframe[id^="application-"]
 ```
 
+It is exported as `DEFAULT_LAUNCHPAD_IFRAME_SELECTOR`. To add your own iframe, extend it:
+
+```ts
+import { test, DEFAULT_LAUNCHPAD_IFRAME_SELECTOR } from "@ahangl/playwright-ui5";
+
+test.use({ ui5Options: { launchpadIframeSelector: `${DEFAULT_LAUNCHPAD_IFRAME_SELECTOR}, iframe#my-host-app` } });
+```
+
 ### ignoreAutoWaitUrls
 
 Requests that waiting for UI5 ignores, like wdi5's option of the same name. Use it for requests that never finish, such as long polling or push channels. Without it, every call waits for them until `waitForUI5Timeout` runs out.
@@ -90,7 +102,7 @@ Requests that waiting for UI5 ignores, like wdi5's option of the same name. Use 
 
 ## Playwright options
 
-Everything else is plain Playwright configuration. Useful settings for UI5 apps:
+Everything else is plain Playwright configuration, see [Playwright's test configuration](https://playwright.dev/docs/test-configuration). Useful settings for UI5 apps:
 
 ```ts
 export default defineConfig<UI5TestOptions>({
@@ -101,16 +113,4 @@ export default defineConfig<UI5TestOptions>({
     screenshot: "only-on-failure"
   }
 });
-```
-
-## `package.json` scripts
-
-```json
-{
-  "scripts": {
-    "test": "playwright test",
-    "test:ui": "playwright test --ui",
-    "report": "playwright show-report"
-  }
-}
 ```

@@ -79,8 +79,8 @@ test("open a book", async ({ ui5, fe }) => {
 - [Usage](https://ahangl.github.io/playwright-ui5/usage) (control API, chaining, assertions, navigation), [locators](https://ahangl.github.io/playwright-ui5/locators)
 - [Authentication](https://ahangl.github.io/playwright-ui5/authentication) (SAP Build Work Zone, IAS)
 - [Fiori elements test library](https://ahangl.github.io/playwright-ui5/fe-testlib), with an [overview of the available `sap.fe.test` functions](https://ahangl.github.io/playwright-ui5/api/fe#functions)
-- [API reference](https://ahangl.github.io/playwright-ui5/api/): `ui5`, `RemoteControl`, `expect` matchers, `fe`, authentication and [configuration](https://ahangl.github.io/playwright-ui5/api/configuration)
-- [Recipes](https://ahangl.github.io/playwright-ui5/recipes) and [known limitations](https://ahangl.github.io/playwright-ui5/limitations)
+- [API reference](https://ahangl.github.io/playwright-ui5/api/): `ui5`, `RemoteControl`, `expect` matchers, `fe`, authentication and [configuration](https://ahangl.github.io/playwright-ui5/configuration)
+- [Cookbook](https://ahangl.github.io/playwright-ui5/cookbook) and [known limitations](https://ahangl.github.io/playwright-ui5/limitations)
 
 For AI agents: [`llms.txt`](https://ahangl.github.io/playwright-ui5/llms.txt) and [`llms-full.txt`](https://ahangl.github.io/playwright-ui5/llms-full.txt) (all pages in one file). The sources are in [`docs/`](docs/).
 

@@ -15,7 +15,8 @@ export default defineConfig({
   },
   themeConfig: {
     nav: [
-      { text: "Guide", link: "/installation", activeMatch: "^/(?!api/)" },
+      { text: "Getting started", link: "/installation", activeMatch: "^/(installation|migration-wdi5|migration-opa)$" },
+      { text: "Guide", link: "/usage", activeMatch: "^/(?!api/|installation$|migration-)." },
       { text: "Reference", link: "/api/", activeMatch: "^/api/" },
       { text: "llms.txt", link: `${base}llms.txt`, target: "_self" },
       { text: "npm", link: "https://www.npmjs.com/package/@ahangl/playwright-ui5" }
@@ -36,12 +37,16 @@ export default defineConfig({
           { text: "Running and debugging", link: "/running" },
           { text: "Usage", link: "/usage" },
           { text: "Locators", link: "/locators" },
-          { text: "Authentication", link: "/authentication" }
+          { text: "Authentication", link: "/authentication" },
+          { text: "Configuration", link: "/configuration" }
         ]
       },
       {
         text: "Fiori elements V4",
-        items: [{ text: "Test library (sap.fe.test)", link: "/fe-testlib" }]
+        items: [
+          { text: "Test library (sap.fe.test)", link: "/fe-testlib" },
+          { text: "Troubleshooting", link: "/fe-troubleshooting" }
+        ]
       },
       {
         text: "Reference",
@@ -49,16 +54,13 @@ export default defineConfig({
           { text: "API reference", link: "/api/" },
           { text: "fe", link: "/api/fe" },
           { text: "ui5", link: "/api/ui5" },
-          { text: "RemoteControl", link: "/api/remote-control" },
-          { text: "expect", link: "/api/expect" },
-          { text: "Authentication", link: "/api/auth" },
-          { text: "Configuration", link: "/api/configuration" }
+          { text: "expect", link: "/api/expect" }
         ]
       },
       {
         text: "More",
         items: [
-          { text: "Recipes", link: "/recipes" },
+          { text: "Cookbook", link: "/cookbook" },
           { text: "Known limitations", link: "/limitations" }
         ]
       }
