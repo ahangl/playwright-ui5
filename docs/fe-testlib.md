@@ -24,8 +24,10 @@ Prerequisites:
 
 - `sap/fe/test` is loaded from the app's own UI5 bootstrap, so its version always matches the app.
 
+Declare the pages once, open the app and call `fe.init` in a `test.beforeEach` hook, and use the returned `Given` / `When` / `Then` in the tests:
+
 ```ts
-import { test } from "@ahangl/playwright-ui5";
+import { test, type FioriElementsJourney } from "@ahangl/playwright-ui5";
 
 const pages = {
   onTheMainPage: { ListReport: { appId: "my.books", componentId: "BooksList", contextPath: "/Books" } },
@@ -33,16 +35,26 @@ const pages = {
   onTheShell: { Shell: {} }
 } as const;
 
-test("list report to object page", async ({ ui5, fe }) => {
-  await ui5.goTo("/index.html");
-  const { When, Then } = fe.init(pages);
+test.describe("books app", () => {
+  let FioriElementsFacade: FioriElementsJourney<typeof pages>;
 
-  await When.onTheMainPage.onFilterBar().iChangeFilterField("Author", "Edgar Allan Poe").and.iExecuteSearch();
-  await Then.onTheMainPage.onTable().iCheckRows({}, 2);
-  await When.onTheMainPage.onTable().iPressRow({ "Book ID": "251" });
-  await Then.onTheDetailPage.onHeader().iCheckTitle("The Raven");
+  test.beforeEach(async ({ ui5, fe }) => {
+    FioriElementsFacade = fe.init(pages);
+  });
+
+  test("list report to object page", async () => {
+    const { When, Then } = FioriElementsFacade;
+    await When.onTheMainPage.onFilterBar().iChangeFilterField("Author", "Edgar Allan Poe").and.iExecuteSearch();
+    await Then.onTheMainPage.onTable().iCheckRows({}, 2);
+    await When.onTheMainPage.onTable().iPressRow({ "Book ID": "251" });
+    await Then.onTheDetailPage.onHeader().iCheckTitle("The Raven");
+  });
 });
 ```
+
+- Use `test.beforeEach`, not `test.beforeAll`. Like wdi5's `before`, the hook prepares the page objects, but in Playwright every test gets a fresh page, and the `fe` fixture belongs to that page.
+- `fe.init` doesn't run anything in the browser. The statements run when you await them, in the test.
+- For a single test, call `fe.init` in the test itself: `const { When, Then } = fe.init(pages);`.
 
 ### Page configuration
 
