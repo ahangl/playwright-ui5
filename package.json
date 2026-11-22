@@ -1,6 +1,6 @@
 {
   "name": "@ahangl/playwright-ui5",
-  "version": "0.0.1",
+  "version": "1.0.0",
   "description": "E2E tests for UI5 apps (Playwright + UI5 Testing API)",
   "keywords": [
     "playwright",
