@@ -106,13 +106,13 @@ The site in `docs/` is built with [VitePress](https://vitepress.dev). `vitepress
 
 - `npm run docs:dev`: live preview while writing.
 - `npm run docs:build` and `npm run docs:preview`: the production build on http://localhost:4173/playwright-ui5/.
-- `npm run docs:deploy`: builds the site and force-pushes it to the `gh-pages` branch, which GitHub Pages serves ("Deploy from a branch", `gh-pages`, `/ (root)`). It needs a clean working tree.
+- Deployment: `.github/workflows/docs.yml` builds the site and deploys it to GitHub Pages on every push to `main` that changes the docs. To deploy by hand, run the **Deploy docs** workflow in the **Actions** tab.
 
 ### Releasing
 
-Versions and the changelog are managed with [Changesets](https://github.com/changesets/changesets):
+Versions and the changelog are managed with [Changesets](https://github.com/changesets/changesets). To publish, run `npm login`, and check with `npm whoami`. `.changeset/config.json` sets `"access": "public"`, which a scoped package needs.
 
-1. Add a changeset for every change that consumers should see: `npx changeset` (choose patch, minor or major, and describe the change). Commit it with the change.
+1. Add a changeset for every change that consumers should see: `npx changeset` (choose patch, minor, or major, and describe the change). Commit it with the change.
 2. When you want to release: `npm run version-packages`. It bumps the version in `package.json` and writes `CHANGELOG.md` from the pending changesets.
 3. Commit the version bump.
 4. `npm run release`. It publishes to npm (public) and creates a git tag. `prepublishOnly` runs lint, the format check, and the type check first, which also builds `dist`. With 2FA, add `--otp=<code>`.

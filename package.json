@@ -52,8 +52,7 @@
     "prepublishOnly": "npm run lint && npm run format && npm run typecheck",
     "docs:dev": "vitepress dev docs",
     "docs:build": "vitepress build docs",
-    "docs:preview": "vitepress preview docs",
-    "docs:deploy": "node scripts/deploy-docs.mjs"
+    "docs:preview": "vitepress preview docs"
   },
   "peerDependencies": {
     "@playwright/test": ">=1.60.0",

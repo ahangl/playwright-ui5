@@ -31,15 +31,16 @@ test("...", async ({ ui5, fe }) => {
 
 What tests import from `@ahangl/playwright-ui5`:
 
-| Import                               | Use                                                                                                |
-| ------------------------------------ | -------------------------------------------------------------------------------------------------- |
-| `test`                               | Playwright's `test` with the fixtures `ui5` ([reference](./ui5)) and `fe` ([reference](./fe)).     |
-| `expect`                             | Playwright's `expect` with the [UI5 matchers](./expect).                                           |
-| `login`, `ias`, `credentialsFromEnv` | Log in to SAP Build Work Zone, see [Authentication](../authentication).                            |
-| `UI5`                                | The class behind the `ui5` fixture, to use it [without fixtures](./ui5#without-fixtures).          |
-| `type UI5TestOptions`                | Types the `ui5Options` in `defineConfig<UI5TestOptions>()`, see [Configuration](../configuration). |
-| `type UI5Selector`                   | The type of a [selector](../locators), for example, for selector constants.                        |
-| `type RemoteControl`                 | The type of a [control](./ui5#remotecontrol), for example, `RemoteControl<Button>`.                |
-| `type AuthProvider`                  | For a [custom identity provider](../authentication#custom-idp).                                    |
+| Import                               | Use                                                                                                                                                                         |
+| ------------------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `test`                               | Playwright's `test` with the fixtures `ui5` ([reference](./ui5)) and `fe` ([reference](./fe)).                                                                              |
+| `expect`                             | Playwright's `expect` with the [UI5 matchers](./expect).                                                                                                                    |
+| `login`, `ias`, `credentialsFromEnv` | Log in to SAP Build Work Zone, see [Authentication](../authentication).                                                                                                     |
+| `UI5`                                | The class behind the `ui5` fixture, to use it [without fixtures](./ui5#without-fixtures).                                                                                   |
+| `type UI5TestOptions`                | Types the `ui5Options` in `defineConfig<UI5TestOptions>()`, see [Configuration](../configuration).                                                                          |
+| `type UI5Selector`                   | The type of a [selector](../locators), for example, for selector constants.                                                                                                 |
+| `type RemoteControl`                 | The type of a [control](./ui5#remotecontrol), for example, `RemoteControl<Button>`.                                                                                         |
+| `type FioriElementsJourney`          | The type of the roots that `fe.init()` returns, for a variable set in a `test.beforeEach` hook, see [Integrate the test library](../fe-testlib#integrate-the-test-library). |
+| `type AuthProvider`                  | For a [custom identity provider](../authentication#custom-idp).                                                                                                             |
 
 The package exports more types, for example, for chains and Fiori elements statements. Tests don't need them, because TypeScript infers them.
